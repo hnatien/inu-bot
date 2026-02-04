@@ -21,6 +21,7 @@ class ValorantAPI:
         self.puuid: str = ""
         self.game_name: str = ""
         self.tag_line: str = ""
+        self.proxy_url: Optional[str] = os.getenv("PROXY_URL")
         
         # In-memory cache
         self.skin_map: Dict[str, Dict[str, Any]] = {}
@@ -41,7 +42,7 @@ class ValorantAPI:
             
         try:
             # Prefetch weapon skins
-            async with self.session.get("https://valorant-api.com/v1/weapons?language=en-US") as resp:
+            async with self.session.get("https://valorant-api.com/v1/weapons?language=en-US", proxy=self.proxy_url) as resp:
                 data = await resp.json()
                 if data.get('status') == 200:
                     for weapon in data.get('data', []):
@@ -55,7 +56,7 @@ class ValorantAPI:
                                 }
                                 
             # Prefetch rarity metadata
-            async with self.session.get("https://valorant-api.com/v1/contenttiers") as resp:
+            async with self.session.get("https://valorant-api.com/v1/contenttiers", proxy=self.proxy_url) as resp:
                 data = await resp.json()
                 if data.get('status') == 200:
                     for tier in data.get('data', []):
@@ -91,7 +92,7 @@ class ValorantAPI:
         """Get the latest Riot Client version"""
         if not self.session:
             await self.init_session()
-        async with self.session.get("https://valorant-api.com/v1/version") as resp: # type: ignore
+        async with self.session.get("https://valorant-api.com/v1/version", proxy=self.proxy_url) as resp: # type: ignore
             data = await resp.json()
             return data['data']['riotClientVersion']
 
@@ -120,14 +121,14 @@ class ValorantAPI:
             self.headers['Authorization'] = f"Bearer {access_token}"
 
             # 3. Get Entitlements Token
-            async with self.session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=self.headers, json={}) as resp: # type: ignore
+            async with self.session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
                 data = await resp.json()
                 if resp.status != 200:
                     return False, f"Lỗi Entitlements ({resp.status}): {data.get('message', 'Unknown Error')}"
                 self.headers['X-Riot-Entitlements-JWT'] = data['entitlements_token']
 
             # 4. Get User Info (PUUID)
-            async with self.session.get('https://auth.riotgames.com/userinfo', headers=self.headers) as resp: # type: ignore
+            async with self.session.get('https://auth.riotgames.com/userinfo', headers=self.headers, proxy=self.proxy_url) as resp: # type: ignore
                 data = await resp.json()
                 self.puuid = data.get('sub', "")
                 acct = data.get('acct', {})
@@ -146,7 +147,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v1/offers/"
         try:
-            async with self.session.get(url, headers=self.headers) as resp: # type: ignore
+            async with self.session.get(url, headers=self.headers, proxy=self.proxy_url) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     self.all_offers = data.get('Offers', [])
@@ -162,7 +163,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{self.puuid}"
         try:
-            async with self.session.post(url, headers=self.headers, json={}) as resp: # type: ignore
+            async with self.session.post(url, headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('SkinsPanelLayout', {})
@@ -179,7 +180,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{self.puuid}"
         try:
-            async with self.session.post(url, headers=self.headers, json={}) as resp: # type: ignore
+            async with self.session.post(url, headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('BonusStore', {})
@@ -197,7 +198,7 @@ class ValorantAPI:
         if not self.session: await self.init_session()
         url = f"https://valorant-api.com/v1/weapons/skinlevels/{level_uuid}?language=en-US"
         try:
-            async with self.session.get(url) as resp: # type: ignore
+            async with self.session.get(url, proxy=self.proxy_url) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('data')
@@ -222,7 +223,7 @@ class ValorantAPI:
         url = f"https://api.henrikdev.xyz/valorant/{endpoint}"
         h = {"Authorization": self.henrik_key} if self.henrik_key else {}
         try:
-            async with self.session.get(url, headers=h) as resp: # type: ignore
+            async with self.session.get(url, headers=h, proxy=self.proxy_url) as resp: # type: ignore
                 return await resp.json() if resp.status == 200 else None
         except Exception as e:
             logger.error(f"HenrikDev API Error ({endpoint}): {e}")
