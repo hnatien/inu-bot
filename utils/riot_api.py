@@ -25,14 +25,57 @@ class ValorantAPI:
         # In-memory cache
         self.skin_map: Dict[str, Dict[str, Any]] = {}
         self.rarity_map: Dict[str, Dict[str, Any]] = {}
-        self.all_offers: List[Dict[str, Any]] = []
+        self.price_overrides: Dict[str, int] = {}
+        
+        # Constants
+        self.VP_IDS = ["85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741", "85ad2bf4-453b-4c30-b744-fbb39b1a53aa"]
+        self.VP_ICON_URL = "https://media.valorant-api.com/currencies/85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741/displayicon.png"
+        
+        # Hardcoded Rarity Data (Defaults, matched to official Riot UUIDs)
+        self.RARITY_DATA = {
+            '12683d76-48d7-84a3-4e09-6985794f0445': {'name': 'Select', 'color': 0x5a9fe2, 'gun_price': 875, 'melee_price': 1750},
+            '0cebb8be-46d7-c12a-d306-e9907bfc5a25': {'name': 'Deluxe', 'color': 0x009587, 'gun_price': 1275, 'melee_price': 2550},
+            '60bca009-4182-7998-dee7-b8a2558dc369': {'name': 'Premium', 'color': 0xd1548d, 'gun_price': 1775, 'melee_price': 3550},
+            'e046854e-406c-37f4-6607-19a9ba8426fc': {'name': 'Exclusive', 'color': 0xf5955b, 'gun_price': 2175, 'melee_price': 4350},
+            '411e4a55-4e59-7757-41f0-86a53f101bb5': {'name': 'Ultra', 'color': 0xfad663, 'gun_price': 2475, 'melee_price': 4950}
+        }
 
     async def init_session(self) -> aiohttp.ClientSession:
         """Initialize ClientSession and prefetch global data"""
         if not self.session:
             self.session = aiohttp.ClientSession()
+            await self.load_price_data()
             await self.fetch_all_data()
         return self.session
+
+    async def load_price_data(self) -> None:
+        """Load hardcoded price data from JSON file"""
+        try:
+            import aiofiles
+            # Use absolute path for reliability
+            path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "skin_prices.json")
+            if not os.path.exists(path):
+                logger.warning(f"Price data file not found at {path}")
+                return
+
+            async with aiofiles.open(path, mode='r', encoding='utf-8') as f:
+                content = await f.read()
+                data = json.loads(content)
+                
+                # Update RARITY_DATA
+                for tier_uuid, tier_info in data.get('tiers', {}).items():
+                    self.RARITY_DATA[tier_uuid] = {
+                        'name': tier_info['name'],
+                        'color': tier_info['color'],
+                        'gun_price': tier_info.get('gun', 0),
+                        'melee_price': tier_info.get('melee', 0)
+                    }
+                
+                # Load Overrides
+                self.price_overrides = data.get('overrides', {})
+                logger.info(f"Loaded {len(self.price_overrides)} price overrides.")
+        except Exception as e:
+            logger.error(f"Failed to load skin price data: {e}")
 
     async def fetch_all_data(self) -> None:
         """Prefetch weapon skins and rarity metadata for faster lookups"""
@@ -84,8 +127,7 @@ class ValorantAPI:
             "platformOSVersion": "10.0.19042.1.256.64bit",
             "platformChipset": "Unknown"
         }
-        json_str = json.dumps(data, indent='\t', separators=(',', ': ')).replace('\n', '\r\n')
-        return base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
+        return base64.b64encode(json.dumps(data).encode()).decode()
 
     async def get_client_version(self) -> str:
         """Get the latest Riot Client version"""
@@ -139,22 +181,6 @@ class ValorantAPI:
             logger.error(f"Auth error: {e}")
             return False, f"Lỗi hệ thống: {str(e)}"
 
-    async def get_all_offers(self) -> List[Dict[str, Any]]:
-        """Fetch global store offers (prices)"""
-        if self.all_offers: return self.all_offers
-        if not self.session: await self.init_session()
-        
-        url = f"https://pd.{self.region}.a.pvp.net/store/v1/offers/"
-        try:
-            async with self.session.get(url, headers=self.headers) as resp: # type: ignore
-                if resp.status == 200:
-                    data = await resp.json()
-                    self.all_offers = data.get('Offers', [])
-                    return self.all_offers
-        except Exception as e:
-            logger.warning(f"Failed to fetch global offers: {e}")
-        return []
-
     async def get_shop(self) -> Optional[Dict[str, Any]]:
         """Fetch user's daily shop storefront"""
         if not self.puuid or 'X-Riot-Entitlements-JWT' not in self.headers or not self.session:
@@ -205,16 +231,17 @@ class ValorantAPI:
             logger.error(f"Failed to get skin details for {level_uuid}: {e}")
         return None
 
-    def get_rarity_color(self, rarity_uuid: Optional[str]) -> int:
-        """Get Discord embed color based on skin rarity"""
-        color_map = {
-            '0cebb8be-46d7-c12a-d306-e9907bfc5a25': 0x009984, # Select
-            'e046854e-406c-37f4-6607-19a9ba8426fc': 0xf99358, # Deluxe
-            '60bca009-4182-7998-dee7-b8a2558dc369': 0xd1538c, # Premium
-            '12683d76-48d7-84a3-4e09-6985794f0445': 0x5a9fe1, # Ultra
-            '411e4a55-4e59-7757-41f0-86a53f101bb5': 0xf9d563  # Exclusive
-        }
-        return color_map.get(rarity_uuid or "", 0x2b2d31)
+    def get_rarity_info(self, rarity_uuid: Optional[str]) -> Dict[str, Any]:
+        """Get color, name and standard price for a rarity"""
+        return self.RARITY_DATA.get(rarity_uuid or "", {'name': 'Unknown', 'color': 0x2b2d31, 'gun_price': 0, 'melee_price': 0})
+
+    def get_hardcoded_price(self, rarity_uuid: Optional[str], is_melee: bool = False, level_uuid: Optional[str] = None) -> int:
+        """Get the standard price for a skin rarity based on weapon type, checked against overrides"""
+        if level_uuid and level_uuid in self.price_overrides:
+            return self.price_overrides[level_uuid]
+            
+        info = self.get_rarity_info(rarity_uuid)
+        return info.get('melee_price' if is_melee else 'gun_price', 0)
 
     async def _henrik_request(self, endpoint: str) -> Optional[Dict[str, Any]]:
         """Generic wrapper for HenrikDev API requests"""

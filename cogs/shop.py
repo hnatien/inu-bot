@@ -73,32 +73,40 @@ class ShopModal(discord.ui.Modal):
             description=f"Daily shop of **{self.api.game_name}#{self.api.tag_line}**\nExpires in: **{time_str}**",
             color=0x2b2d31
         )
+        header_embed.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
         embeds = [header_embed]
         
         for item in offers_data:
+            # Handle both list of IDs (Shop) and list of dicts (NM)
             if isinstance(item, dict):
                 offer_id = item.get('OfferID', '')
                 discount = item.get('DiscountPercent', 0)
-                # Get discounted price
-                costs = item.get('DiscountCosts', {})
-                price = list(costs.values())[0] if costs else None
             else:
                 offer_id = item
                 discount = 0
-                price = None
             
             details = await self.api.get_skin_details(offer_id)
             if details:
-                name = details.get('name', 'Unknown Skin')
-                icon = details.get('icon', None)
-                rarity = details.get('rarity', None)
-                color = self.api.get_rarity_color(rarity)
+                name: str = details.get('name', 'Unknown Skin')
+                icon: Optional[str] = details.get('icon')
+                rarity_uuid: Optional[str] = details.get('rarity')
+                weapon_type: str = details.get('weapon', "")
                 
-                desc = ""
-                if discount > 0:
-                    desc = f"**🔥 Discount: {discount}%**"
-                    if price:
-                        desc += f"\n**💰 Price: {price:,} VP**"
+                # Detect if it's a Melee weapon (Standardized checks)
+                is_melee = (
+                    weapon_type.lower() == "melee" or 
+                    any(k in name.lower() for k in ["knife", "karambit", "butterfly", "axe", "blade", "hammer", "dagger", "fan", "bat", "scythe", "gauntlet", "stiletto", "crowbar"])
+                )
+
+                # Get Price from Hardcoded Data (inc. Overrides)
+                base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
+                final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
+                
+                # Embed Color and info
+                rarity_info = self.api.get_rarity_info(rarity_uuid)
+                color = rarity_info['color']
+
+                desc = f"**🔥 Discount: {discount}%**" if discount > 0 else ""
                 
                 skin_embed = discord.Embed(
                     title=name,
@@ -108,13 +116,16 @@ class ShopModal(discord.ui.Modal):
                 if icon:
                     skin_embed.set_thumbnail(url=icon)
                 
+                # Price with VP Icon in Footer
+                price_text = f"{final_price:,} VP" if final_price > 0 else "Unknown Price"
+                skin_embed.set_footer(text=price_text, icon_url=self.api.VP_ICON_URL)
+                
                 embeds.append(skin_embed)
                 
         if len(embeds) == 1:
             await interaction.followup.send("⚠️ Không tìm thấy skin nào.")
             return
 
-        embeds[-1].set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
         await interaction.followup.send(embeds=embeds)
 
 class ShopView(discord.ui.View):
