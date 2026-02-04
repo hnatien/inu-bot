@@ -121,17 +121,9 @@ class ValorantAPI:
 
             # 3. Get Entitlements Token
             async with self.session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=self.headers, json={}) as resp: # type: ignore
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    logger.error(f"Entitlements Error {resp.status}: {error_text[:200]}")
-                    if resp.status == 403:
-                        return False, "Lỗi 403: IP của host này đã bị Riot chặn. Bạn cần sử dụng Proxy hoặc chạy ở Hosting khác."
-                    return False, f"Lỗi Entitlements ({resp.status})"
-                
-                if "application/json" not in resp.headers.get("Content-Type", ""):
-                    return False, "Riot không trả về JSON. Có thể hệ thống của họ đang bảo trì hoặc chặn truy cập."
-                
                 data = await resp.json()
+                if resp.status != 200:
+                    return False, f"Lỗi Entitlements ({resp.status}): {data.get('message', 'Unknown Error')}"
                 self.headers['X-Riot-Entitlements-JWT'] = data['entitlements_token']
 
             # 4. Get User Info (PUUID)
