@@ -114,7 +114,7 @@ class ShopModal(discord.ui.Modal):
             await interaction.followup.send("⚠️ Không tìm thấy skin nào.")
             return
 
-        embeds[-1].set_footer(text="Inu Bot • Night Market Edition", icon_url=interaction.user.display_avatar.url)
+        embeds[-1].set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
         await interaction.followup.send(embeds=embeds)
 
 class ShopView(discord.ui.View):
@@ -142,6 +142,41 @@ class ShopCog(commands.Cog):
     async def nightmarket_slash(self, interaction: discord.Interaction) -> None:
         await self._send_intro(interaction, mode="nightmarket")
 
+    @app_commands.command(name="safety", description="Giải thích về tính an toàn khi sử dụng tính năng Shop/Night Market")
+    async def safety_slash(self, interaction: discord.Interaction) -> None:
+        """Giải thích cơ chế bảo mật của Token Authentication"""
+        await self._send_safety_msg(interaction)
+
+    @commands.command(name="safety")
+    async def safety_prefix(self, ctx: commands.Context) -> None:
+        """Phiên bản lệnh prefix của safety"""
+        await self._send_safety_msg(ctx)
+
+    async def _send_safety_msg(self, context: Union[discord.Interaction, commands.Context]) -> None:
+        """Hàm dùng chung để gửi nội dung giải thích bảo mật"""
+        description = (
+            "Hệ thống sử dụng cơ chế **OAuth2 Implicit Grant** của Riot Games, tương tự như cách các trang web như "
+            "tracker.gg hay các ứng dụng mã nguồn mở uy tín đang hoạt động.\n\n"
+            "**Tại sao phương thức này an toàn?**\n"
+            "1. **Không yêu cầu Mật khẩu:** Bạn đăng nhập trực tiếp trên trang chủ `auth.riotgames.com`. Bot hoàn toàn không can thiệp vào quá trình này.\n"
+            "2. **Cơ chế Token:** Link bạn cung cấp chỉ chứa *Access Token* - một dạng 'mã định danh tạm thời'. Nó chỉ có quyền đọc dữ liệu cửa hàng và MMR, không thể đổi mật khẩu hay thực hiện giao dịch.\n"
+            "3. **Không lưu trữ:** Bot chỉ sử dụng Token trong bộ nhớ tạm (RAM) để truy vấn API và sẽ bị xóa ngay sau khi phiên làm việc kết thúc.\n"
+            "4. **Zero Logs:** Chúng tôi cam kết không ghi nhận (log) bất kỳ Token nào vào cơ sở dữ liệu.\n\n"
+            "*Khuyến cáo: Luôn sử dụng xác thực 2 lớp (2FA) cho tài khoản Riot của bạn để đảm bảo an toàn tối đa.*"
+        )
+        
+        embed = discord.Embed(
+            title="GIẢI THÍCH VỀ BẢO MẬT",
+            description=description,
+            color=0x2b2d31
+        )
+        embed.set_footer(text="Inu Bot")
+        
+        if isinstance(context, discord.Interaction):
+            await context.response.send_message(embed=embed, ephemeral=True)
+        else:
+            await context.send(embed=embed)
+
     @commands.command(name="shop")
     async def shop_prefix(self, ctx: commands.Context) -> None:
         await self._send_intro(ctx, mode="shop")
@@ -168,7 +203,7 @@ class ShopCog(commands.Cog):
             description=description,
             color=0x2b2d31
         )
-        embed.set_footer(text="Lưu ý: Chúng tôi không lưu trữ thông tin đăng nhập của bạn. Cơ chế Token này giống như thẻ vào cửa chỉ dùng được một lần, vậy nên bot sẽ không thể có được thông tin tài khoản của bạn")
+        embed.set_footer(text="Inu Bot")
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)

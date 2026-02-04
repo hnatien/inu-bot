@@ -238,7 +238,7 @@ class ValorantAPI:
 
     async def get_recent_matches(self, name: str, tag: str) -> Optional[Dict[str, Any]]:
         """Get history of recent matches"""
-        return await self._henrik_request(f"v3/matches/{self.region}/{name}/{tag}?size=3")
+        return await self._henrik_request(f"v3/matches/{self.region}/{name}/{tag}?size=5")
 
     def get_rank_assets(self, rank_name: str) -> Tuple[int, str]:
         """Get color and icon URL for a specific rank with correct tier handling"""
