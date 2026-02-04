@@ -168,7 +168,7 @@ class ShopCog(commands.Cog):
             description=description,
             color=0x2b2d31
         )
-        embed.set_footer(text="Lưu ý: Chúng tôi không lưu trữ thông tin đăng nhập của bạn. Cơ chế Token này giống như "thẻ vào cửa" chỉ dùng được một lần, vậy nên bot sẽ không thể có được thông tin tài khoản của bạn")
+        embed.set_footer(text="Lưu ý: Chúng tôi không lưu trữ thông tin đăng nhập của bạn. Cơ chế Token này giống như thẻ vào cửa chỉ dùng được một lần, vậy nên bot sẽ không thể có được thông tin tài khoản của bạn")
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)

@@ -73,27 +73,42 @@ class StatModal(discord.ui.Modal, title='TRA CỨU CHỈ SỐ VALORANT'):
             if card_wide:
                 profile_embed.set_image(url=card_wide)
             
-            # --- Recent Matches Summary (Monospace for alignment) ---
-            match_stats = "```\n"
-            match_stats += f"{'MODE':<12} | {'RESULT':<7} | {'K/D/A':<10}\n"
-            match_stats += "-" * 35 + "\n"
-
+            # --- Recent Matches Summary ---
+            match_rows = []
             if isinstance(matches_data, dict) and matches_data.get('status') == 200:
-                for m in matches_data['data']:
+                for m in matches_data.get('data', []):
                     meta = m.get('metadata', {})
-                    mode = meta.get('mode', 'Unknown')
+                    mode = str(meta.get('mode', 'Unknown'))
+                    if not mode or mode.strip() == "-" or mode.strip() == "--": continue
                     
-                    p = next((p for p in m['players']['all_players'] if p['name'].lower() == name.lower()), None)
+                    players = m.get('players', {}).get('all_players', [])
+                    p = next((p for p in players if p.get('name', '').lower() == name.lower()), None)
+                    
                     if p:
-                        k, d, a = p['stats']['kills'], p['stats']['deaths'], p['stats']['assists']
-                        team = p['team'].lower()
-                        is_win = m['teams'].get(team, {}).get('has_won', False)
+                        st = p.get('stats', {})
+                        k, d, a = st.get('kills', 0), st.get('deaths', 0), st.get('assists', 0)
+                        team = (p.get('team') or 'Unknown').lower()
+                        is_win = m.get('teams', {}).get(team, {}).get('has_won', False)
                         result = "WIN" if is_win else "LOSS"
-                        match_stats += f"{mode[:12]:<12} | {result:<7} | {k}/{d}/{a}\n"
+                        match_rows.append({
+                            'mode': mode,
+                            'result': result,
+                            'kda': f"{k}/{d}/{a}"
+                        })
+
+            if match_rows:
+                mode_width = min(max(len(r['mode']) for r in match_rows), 19)
+                mode_width = max(mode_width, 10)
+                
+                header = f"{'MODE':<{mode_width}}|{'RES':^4}|{'K/D/A':^8}"
+                match_stats = f"```\n{header}\n{'-' * len(header)}\n"
+                for r in match_rows:
+                    m_display = r['mode'][:mode_width]
+                    res = r['result'][:4]
+                    match_stats += f"{m_display:<{mode_width}}|{res:^4}|{r['kda']:^8}\n"
+                match_stats += "```"
             else:
-                match_stats += "No recent matches found.\n"
-            
-            match_stats += "```"
+                match_stats = "```\nNo recent matches found.\n```"
             profile_embed.add_field(name="Recent Matches", value=match_stats, inline=False)
             profile_embed.set_footer(text="Inu Bot • Premium Analytics", icon_url=interaction.user.display_avatar.url)
             

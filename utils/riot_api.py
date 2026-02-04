@@ -21,7 +21,6 @@ class ValorantAPI:
         self.puuid: str = ""
         self.game_name: str = ""
         self.tag_line: str = ""
-        self.proxy_url: Optional[str] = os.getenv("PROXY_URL")
         
         # In-memory cache
         self.skin_map: Dict[str, Dict[str, Any]] = {}
@@ -42,7 +41,7 @@ class ValorantAPI:
             
         try:
             # Prefetch weapon skins
-            async with self.session.get("https://valorant-api.com/v1/weapons?language=en-US", proxy=self.proxy_url) as resp:
+            async with self.session.get("https://valorant-api.com/v1/weapons?language=en-US") as resp:
                 data = await resp.json()
                 if data.get('status') == 200:
                     for weapon in data.get('data', []):
@@ -56,7 +55,7 @@ class ValorantAPI:
                                 }
                                 
             # Prefetch rarity metadata
-            async with self.session.get("https://valorant-api.com/v1/contenttiers", proxy=self.proxy_url) as resp:
+            async with self.session.get("https://valorant-api.com/v1/contenttiers") as resp:
                 data = await resp.json()
                 if data.get('status') == 200:
                     for tier in data.get('data', []):
@@ -92,7 +91,7 @@ class ValorantAPI:
         """Get the latest Riot Client version"""
         if not self.session:
             await self.init_session()
-        async with self.session.get("https://valorant-api.com/v1/version", proxy=self.proxy_url) as resp: # type: ignore
+        async with self.session.get("https://valorant-api.com/v1/version") as resp: # type: ignore
             data = await resp.json()
             return data['data']['riotClientVersion']
 
@@ -121,14 +120,14 @@ class ValorantAPI:
             self.headers['Authorization'] = f"Bearer {access_token}"
 
             # 3. Get Entitlements Token
-            async with self.session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.post('https://entitlements.auth.riotgames.com/api/token/v1', headers=self.headers, json={}) as resp: # type: ignore
                 data = await resp.json()
                 if resp.status != 200:
                     return False, f"Lỗi Entitlements ({resp.status}): {data.get('message', 'Unknown Error')}"
                 self.headers['X-Riot-Entitlements-JWT'] = data['entitlements_token']
 
             # 4. Get User Info (PUUID)
-            async with self.session.get('https://auth.riotgames.com/userinfo', headers=self.headers, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.get('https://auth.riotgames.com/userinfo', headers=self.headers) as resp: # type: ignore
                 data = await resp.json()
                 self.puuid = data.get('sub', "")
                 acct = data.get('acct', {})
@@ -147,7 +146,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v1/offers/"
         try:
-            async with self.session.get(url, headers=self.headers, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.get(url, headers=self.headers) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     self.all_offers = data.get('Offers', [])
@@ -163,7 +162,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{self.puuid}"
         try:
-            async with self.session.post(url, headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.post(url, headers=self.headers, json={}) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('SkinsPanelLayout', {})
@@ -180,7 +179,7 @@ class ValorantAPI:
         
         url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{self.puuid}"
         try:
-            async with self.session.post(url, headers=self.headers, json={}, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.post(url, headers=self.headers, json={}) as resp: # type: ignore
                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('BonusStore', {})
@@ -198,8 +197,8 @@ class ValorantAPI:
         if not self.session: await self.init_session()
         url = f"https://valorant-api.com/v1/weapons/skinlevels/{level_uuid}?language=en-US"
         try:
-            async with self.session.get(url, proxy=self.proxy_url) as resp: # type: ignore
-                if resp.status == 200:
+            async with self.session.get(url) as resp: # type: ignore
+                 if resp.status == 200:
                     data = await resp.json()
                     return data.get('data')
         except Exception as e:
@@ -223,7 +222,7 @@ class ValorantAPI:
         url = f"https://api.henrikdev.xyz/valorant/{endpoint}"
         h = {"Authorization": self.henrik_key} if self.henrik_key else {}
         try:
-            async with self.session.get(url, headers=h, proxy=self.proxy_url) as resp: # type: ignore
+            async with self.session.get(url, headers=h) as resp: # type: ignore
                 return await resp.json() if resp.status == 200 else None
         except Exception as e:
             logger.error(f"HenrikDev API Error ({endpoint}): {e}")
@@ -242,20 +241,30 @@ class ValorantAPI:
         return await self._henrik_request(f"v3/matches/{self.region}/{name}/{tag}?size=3")
 
     def get_rank_assets(self, rank_name: str) -> Tuple[int, str]:
-        """Get color and icon URL for a specific rank"""
+        """Get color and icon URL for a specific rank with correct tier handling"""
         rank_name = rank_name.lower()
         color = 0x2b2d31
+        # Default Unrated icon
         icon = "https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/0/largeicon.png"
         
+        # Base indices for each rank (Tier 1)
         ranks = {
             "iron": (0x565656, 3), "bronze": (0x8c7857, 6), "silver": (0xc0c0c0, 9),
             "gold": (0xffd700, 12), "platinum": (0x3e8ca7, 15), "diamond": (0xb48bd6, 18),
-            "ascendant": (0x62a67e, 21), "immortal": (0xbf3650, 24), "radiant": (0xffffaa, 25)
+            "ascendant": (0x62a67e, 21), "immortal": (0xbf3650, 24), "radiant": (0xffffaa, 27)
         }
         
-        for r, (c, idx) in ranks.items():
+        for r, (c, base_idx) in ranks.items():
             if r in rank_name:
-                color, icon = c, f"https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/{idx}/largeicon.png"
+                color = c
+                offset = 0
+                if " 2" in rank_name: offset = 1
+                elif " 3" in rank_name: offset = 2
+                
+                # Radiant doesn't have tiers
+                if r == "radiant": offset = 0
+                
+                icon = f"https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/{base_idx + offset}/largeicon.png"
                 break
         return color, icon
 
