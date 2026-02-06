@@ -89,6 +89,17 @@ class ValorantAPI:
                 if data.get('status') == 200:
                     for weapon in data.get('data', []):
                         for skin in weapon.get('skins', []):
+                            # Map both Skin UUID and all its Level UUIDs for max compatibility
+                            skin_data = {
+                                'name': skin['displayName'],
+                                'icon': skin.get('displayIcon'),
+                                'rarity': skin.get('contentTierUuid'),
+                                'weapon': weapon['displayName']
+                            }
+                            # Map skin UUID
+                            self.skin_map[skin['uuid']] = skin_data
+                            
+                            # Map all levels (including Level 1)
                             for level in skin.get('levels', []):
                                 self.skin_map[level['uuid']] = {
                                     'name': skin['displayName'],
@@ -217,6 +228,9 @@ class ValorantAPI:
 
     async def get_skin_details(self, level_uuid: str) -> Optional[Dict[str, Any]]:
         """Lookup skin details from cache or Valorant-API"""
+        if not level_uuid:
+            return None
+            
         if level_uuid in self.skin_map:
             return self.skin_map[level_uuid]
         

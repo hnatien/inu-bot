@@ -30,103 +30,103 @@ class ShopModal(discord.ui.Modal):
             return
 
         if self.mode == "shop":
-            data = await self.api.get_shop()
-            title = "🎯 DAILY SHOP"
-            offers_key = 'SingleItemStorefrontOffers'
-            alt_offers_key = 'SingleItemOffers'
-            duration_key = 'SingleItemOffersRemainingDurationInSeconds'
+            await self._handle_shop(interaction)
         else:
-            data = await self.api.get_nightmarket()
-            title = "🌙 NIGHT MARKET"
-            offers_key = 'BonusStoreOffers'
-            alt_offers_key = None
-            duration_key = 'BonusStoreRemainingDurationInSeconds'
+            await self._handle_nightmarket(interaction)
 
+    async def _handle_shop(self, interaction: discord.Interaction) -> None:
+        data = await self.api.get_shop()
         if not data:
-            if self.mode == "nightmarket":
-                 await interaction.followup.send("❌ Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
-            else:
-                await interaction.followup.send("❌ Không lấy được dữ liệu từ Riot.")
+            await interaction.followup.send("❌ Không lấy được dữ liệu Daily Shop từ Riot.")
             return
 
-        # Identify skin offers
-        offers_data = data.get(offers_key)
-        if not offers_data and alt_offers_key:
-            offers_data = data.get(alt_offers_key, [])
-        
-        if not offers_data:
-            await interaction.followup.send("⚠️ Không tìm thấy ưu đãi nào.")
-            return
+        offers = data.get('SingleItemStorefrontOffers', [])
+        if not offers:
+            offers = data.get('SingleItemOffers', [])
 
-        remaining = data.get(duration_key, 0)
-        days = remaining // 86400
-        hours = (remaining % 86400) // 3600
-        minutes = (remaining % 3600) // 60
+        remaining = data.get('SingleItemOffersRemainingDurationInSeconds', 0)
+        time_str = self._format_duration(remaining)
 
-        time_str = f"{hours}h {minutes}m"
-        if days > 0:
-            time_str = f"{days}d {time_str}"
-
-        # Embed Header
-        header_embed = discord.Embed(
-            title=title,
-            description=f"Daily shop of **{self.api.game_name}#{self.api.tag_line}**\nExpires in: **{time_str}**",
+        header = discord.Embed(
+            title="🎯 DAILY SHOP",
+            description=f"Cửa hàng của **{self.api.game_name}#{self.api.tag_line}**\nHết hạn sau: **{time_str}**",
             color=0x2b2d31
         )
-        header_embed.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
-        embeds = [header_embed]
-        
-        for item in offers_data:
-            # Handle both list of IDs (Shop) and list of dicts (NM)
-            if isinstance(item, dict):
-                offer_id = item.get('OfferID', '')
-                discount = item.get('DiscountPercent', 0)
-            else:
-                offer_id = item
-                discount = 0
-            
+        header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
+        embeds = [header]
+
+        for offer_id in offers:
             details = await self.api.get_skin_details(offer_id)
             if details:
-                name: str = details.get('name', 'Unknown Skin')
-                icon: Optional[str] = details.get('icon')
-                rarity_uuid: Optional[str] = details.get('rarity')
-                weapon_type: str = details.get('weapon', "")
-                
-                # Detect if it's a Melee weapon (Standardized checks)
-                is_melee = (
-                    weapon_type.lower() == "melee" or 
-                    any(k in name.lower() for k in ["knife", "karambit", "butterfly", "axe", "blade", "hammer", "dagger", "fan", "bat", "scythe", "gauntlet", "stiletto", "crowbar"])
-                )
+                embeds.append(self._create_skin_embed(details, 0, offer_id))
 
-                # Get Price from Hardcoded Data (inc. Overrides)
-                base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
-                final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
-                
-                # Embed Color and info
-                rarity_info = self.api.get_rarity_info(rarity_uuid)
-                color = rarity_info['color']
+        if len(embeds) <= 1:
+            await interaction.followup.send("⚠️ Không tìm thấy skin nào trong Shop.")
+        else:
+            await interaction.followup.send(embeds=embeds)
 
-                desc = f"**🔥 Discount: {discount}%**" if discount > 0 else ""
-                
-                skin_embed = discord.Embed(
-                    title=name,
-                    description=desc,
-                    color=color
-                )
-                if icon:
-                    skin_embed.set_thumbnail(url=icon)
-                
-                # Price with VP Icon in Footer
-                price_text = f"{final_price:,} VP" if final_price > 0 else "Unknown Price"
-                skin_embed.set_footer(text=price_text, icon_url=self.api.VP_ICON_URL)
-                
-                embeds.append(skin_embed)
-                
-        if len(embeds) == 1:
-            await interaction.followup.send("⚠️ Không tìm thấy skin nào.")
+    async def _handle_nightmarket(self, interaction: discord.Interaction) -> None:
+        data = await self.api.get_nightmarket()
+        if not data:
+            await interaction.followup.send("❌ Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
             return
 
-        await interaction.followup.send(embeds=embeds)
+        offers = data.get('BonusStoreOffers', [])
+        remaining = data.get('BonusStoreRemainingDurationInSeconds', 0)
+        time_str = self._format_duration(remaining)
+
+        header = discord.Embed(
+            title="🌙 NIGHT MARKET",
+            description=f"Night Market của **{self.api.game_name}#{self.api.tag_line}**\nHết hạn sau: **{time_str}**",
+            color=0x2b2d31
+        )
+        header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
+        embeds = [header]
+
+        for item in offers:
+            offer_id = item.get('OfferID') or item.get('Offer', {}).get('OfferID')
+            if not offer_id:
+                rewards = item.get('Offer', {}).get('Rewards', [])
+                if rewards: offer_id = rewards[0].get('ItemID')
+            
+            if not offer_id: continue
+
+            discount = item.get('DiscountPercent', 0)
+            details = await self.api.get_skin_details(offer_id)
+            if details:
+                embeds.append(self._create_skin_embed(details, discount, offer_id))
+
+        if len(embeds) <= 1:
+            await interaction.followup.send("⚠️ Không tìm thấy skin nào trong Night Market.")
+        else:
+            await interaction.followup.send(embeds=embeds)
+
+    def _format_duration(self, seconds: int) -> str:
+        days = seconds // 86400
+        hours = (seconds % 86400) // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+
+    def _create_skin_embed(self, details: Dict[str, Any], discount: int, offer_id: str) -> discord.Embed:
+        name = details.get('name') or details.get('displayName') or 'Unknown Skin'
+        icon = details.get('icon') or details.get('displayIcon')
+        rarity_uuid = details.get('rarity') or details.get('contentTierUuid')
+        weapon_type = details.get('weapon', "")
+        
+        is_melee = weapon_type.lower() == "melee" or any(k in name.lower() for k in ["knife", "karambit", "butterfly", "axe", "blade", "hammer", "dagger", "fan", "bat", "scythe", "gauntlet", "stiletto", "crowbar"])
+
+        base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
+        final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
+        
+        rarity_info = self.api.get_rarity_info(rarity_uuid)
+        
+        desc = f"**🔥 Giảm giá: {discount}%**" if discount > 0 else ""
+        embed = discord.Embed(title=name, description=desc, color=rarity_info['color'])
+        if icon: embed.set_thumbnail(url=icon)
+        
+        price_text = f"{final_price:,} VP" if final_price > 0 else "N/A"
+        embed.set_footer(text=price_text, icon_url=self.api.VP_ICON_URL)
+        return embed
 
 class ShopView(discord.ui.View):
     def __init__(self, api: ValorantAPI, auth_url: str, context: Union[discord.Interaction, commands.Context], mode: str = "shop") -> None:
