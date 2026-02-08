@@ -39,6 +39,12 @@ class ValorantAPI:
             'e046854e-406c-37f4-6607-19a9ba8426fc': {'name': 'Exclusive', 'color': 0xf5955b, 'gun_price': 2175, 'melee_price': 4350},
             '411e4a55-4e59-7757-41f0-86a53f101bb5': {'name': 'Ultra', 'color': 0xfad663, 'gun_price': 2475, 'melee_price': 4950}
         }
+        
+        # Melee weapon keywords for detection
+        self.MELEE_KEYWORDS = [
+            "knife", "karambit", "butterfly", "axe", "blade", "hammer",
+            "dagger", "fan", "bat", "scythe", "gauntlet", "stiletto", "crowbar"
+        ]
 
     async def init_session(self) -> aiohttp.ClientSession:
         """Initialize ClientSession and prefetch global data"""
@@ -189,8 +195,12 @@ class ValorantAPI:
                 return (True, "Xác thực thành công!") if self.puuid else (False, "Không tìm thấy User ID.")
                 
         except Exception as e:
-            logger.error(f"Auth error: {e}")
-            return False, f"Lỗi hệ thống: {str(e)}"
+            # Sanitize error message to prevent token leakage
+            error_msg = str(e)
+            if 'access_token' in error_msg.lower() or 'bearer' in error_msg.lower():
+                error_msg = "Authentication failed (details sanitized)"
+            logger.error(f"Auth error: {error_msg}")
+            return False, "Lỗi hệ thống khi xác thực. Vui lòng thử lại."
 
     async def get_shop(self) -> Optional[Dict[str, Any]]:
         """Fetch user's daily shop storefront"""
@@ -256,6 +266,13 @@ class ValorantAPI:
             
         info = self.get_rarity_info(rarity_uuid)
         return info.get('melee_price' if is_melee else 'gun_price', 0)
+
+    def is_melee_weapon(self, weapon_type: str, skin_name: str) -> bool:
+        """Check if a weapon is a melee type based on weapon type or skin name keywords."""
+        if weapon_type.lower() == "melee":
+            return True
+        skin_name_lower = skin_name.lower()
+        return any(keyword in skin_name_lower for keyword in self.MELEE_KEYWORDS)
 
     async def _henrik_request(self, endpoint: str) -> Optional[Dict[str, Any]]:
         """Generic wrapper for HenrikDev API requests"""

@@ -2,8 +2,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from utils.riot_api import ValorantAPI
-import asyncio
-from typing import Optional, List, Dict, Any, Union
+from typing import Dict, Any, Union
+import logging
+
+logger = logging.getLogger('ShopCog')
+
 
 class ShopModal(discord.ui.Modal):
     def __init__(self, api: ValorantAPI, context: Union[discord.Interaction, commands.Context], mode: str = "shop") -> None:
@@ -75,6 +78,7 @@ class ShopModal(discord.ui.Modal):
         remaining = data.get('BonusStoreRemainingDurationInSeconds', 0)
         time_str = self._format_duration(remaining)
 
+        # Header embed
         header = discord.Embed(
             title="🌙 NIGHT MARKET",
             description=f"Night Market của **{self.api.game_name}#{self.api.tag_line}**\nHết hạn sau: **{time_str}**",
@@ -87,9 +91,11 @@ class ShopModal(discord.ui.Modal):
             offer_id = item.get('OfferID') or item.get('Offer', {}).get('OfferID')
             if not offer_id:
                 rewards = item.get('Offer', {}).get('Rewards', [])
-                if rewards: offer_id = rewards[0].get('ItemID')
+                if rewards:
+                    offer_id = rewards[0].get('ItemID')
             
-            if not offer_id: continue
+            if not offer_id:
+                continue
 
             discount = item.get('DiscountPercent', 0)
             details = await self.api.get_skin_details(offer_id)
@@ -112,8 +118,7 @@ class ShopModal(discord.ui.Modal):
         icon = details.get('icon') or details.get('displayIcon')
         rarity_uuid = details.get('rarity') or details.get('contentTierUuid')
         weapon_type = details.get('weapon', "")
-        
-        is_melee = weapon_type.lower() == "melee" or any(k in name.lower() for k in ["knife", "karambit", "butterfly", "axe", "blade", "hammer", "dagger", "fan", "bat", "scythe", "gauntlet", "stiletto", "crowbar"])
+        is_melee = self.api.is_melee_weapon(weapon_type, name)
 
         base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
         final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
