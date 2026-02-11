@@ -66,9 +66,14 @@ class StatModal(discord.ui.Modal, title='TRA CỨU CHỈ SỐ VALORANT'):
             rr = data.get('ranking_in_tier', 0)
             rank_color, rank_icon = self.api.get_rank_assets(rank)
             
-            # Progress bar using special characters
-            bars = int(rr / 10)
-            progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr}/100 RR**"
+            # Radiant/Immortal have uncapped RR — no progress bar needed
+            rank_lower = rank.lower()
+            is_uncapped = "radiant" in rank_lower or "immortal" in rank_lower
+            if is_uncapped:
+                progress_bar = f"**{rr} RR**"
+            else:
+                bars = min(int(rr / 10), 10)
+                progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr}/100 RR**"
             
             level = "???"
             card_wide = None
