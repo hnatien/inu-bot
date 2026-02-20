@@ -4,6 +4,8 @@ import re
 import json
 import base64
 import logging
+import ssl
+import certifi
 from typing import Dict, List, Optional, Tuple, Any, Union
 from dotenv import load_dotenv
 
@@ -49,7 +51,9 @@ class ValorantAPI:
     async def init_session(self) -> aiohttp.ClientSession:
         """Initialize ClientSession and prefetch global data"""
         if not self.session:
-            self.session = aiohttp.ClientSession()
+            ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+            connector = aiohttp.TCPConnector(ssl=ssl_ctx)
+            self.session = aiohttp.ClientSession(connector=connector)
             await self.load_price_data()
             await self.fetch_all_data()
         return self.session
