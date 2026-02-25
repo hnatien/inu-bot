@@ -4,7 +4,7 @@ from discord import app_commands
 import os
 import logging
 from dotenv import load_dotenv
-from utils.riot_api import ValorantAPI
+from utils import ValorantAPI
 from typing import Optional
 
 # Setup logging

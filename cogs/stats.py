@@ -1,197 +1,120 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import asyncio
-from typing import Optional, List, Dict, Any, Tuple, Union
-from utils.riot_api import ValorantAPI
+from typing import Union, Optional
 
-class PlayerStatsPagination(discord.ui.View):
-    """View to handle navigation between profile and match history."""
-    def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed) -> None:
-        super().__init__(timeout=120)
-        self.p_embed = p_embed
-        self.m_embed = m_embed
-        self.current = 0
-
-    @discord.ui.button(label="LỊCH SỬ ĐẤU", style=discord.ButtonStyle.primary)
-    async def navigate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        if self.current == 0:
-            self.current = 1
-            button.label = "THÔNG TIN NGƯỜI CHƠI"
-            await interaction.response.edit_message(embed=self.m_embed, view=self)
-        else:
-            self.current = 0
-            button.label = "LỊCH SỬ ĐẤU"
-            await interaction.response.edit_message(embed=self.p_embed, view=self)
-
-class StatModal(discord.ui.Modal, title='TRA CỨU CHỈ SỐ VALORANT'):
-    """Modal for Riot ID and Tag input."""
-    def __init__(self, api: ValorantAPI) -> None:
-        super().__init__()
-        self.api = api
-
-    name_input = discord.ui.TextInput(
-        label='Tên In-game (Riot ID)',
-        placeholder='Ví dụ: TenZ',
-        required=True
-    )
-    tag_input = discord.ui.TextInput(
-        label='Tag (không cần #)',
-        placeholder='Ví dụ: 0405',
-        required=True,
-        min_length=3,
-        max_length=5
-    )
-
-    async def on_submit(self, interaction: discord.Interaction) -> None:
-        name = self.name_input.value
-        tag = self.tag_input.value
-        
-        await interaction.response.defer(ephemeral=False)
-        
-        try:
-            acc_data, mmr_data, matches_data = await asyncio.gather(
-                self.api.get_account_info(name, tag),
-                self.api.get_stats(name, tag),
-                self.api.get_recent_matches(name, tag),
-                return_exceptions=True
-            )
-            
-            if isinstance(mmr_data, Exception) or not mmr_data or mmr_data.get('status') != 200:
-                await interaction.followup.send(f"Không tìm thấy người chơi **{name}#{tag}** hoặc tài khoản đang ở chế độ riêng tư.", ephemeral=True)
-                return
-
-            data = mmr_data.get('data', {})
-            rank = data.get('currenttierpatched', 'Unrated')
-            rr = data.get('ranking_in_tier', 0)
-            rank_color, rank_icon = self.api.get_rank_assets(rank)
-            
-            # Radiant/Immortal have uncapped RR — no progress bar needed
-            rank_lower = rank.lower()
-            is_uncapped = "radiant" in rank_lower or "immortal" in rank_lower
-            if is_uncapped:
-                progress_bar = f"**{rr} RR**"
-            else:
-                bars = min(int(rr / 10), 10)
-                progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr}/100 RR**"
-            
-            level = "???"
-            card_wide = None
-            card_small = None
-            region = data.get('region', 'N/A').upper()
-            
-            if isinstance(acc_data, dict) and acc_data.get('status') == 200:
-                acc_info = acc_data.get('data', {})
-                level = acc_info.get('account_level', '???')
-                card_wide = acc_info.get('card', {}).get('wide') 
-                card_small = acc_info.get('card', {}).get('small')
-
-            # --- Page 1: Profile ---
-            profile_embed = discord.Embed(
-                title=f"{name}#{tag}",
-                description=f"**{rank}**\n{progress_bar}",
-                color=rank_color
-            )
-            profile_embed.set_thumbnail(url=rank_icon)
-            profile_embed.set_author(name=f"Level {level} | Region: {region}", icon_url=card_small)
-            if card_wide:
-                profile_embed.set_image(url=card_wide)
-            profile_embed.set_footer(text="Inu Bot")
-            
-            # --- Page 2: Detailed History ---
-            full_match_rows = []
-            if isinstance(matches_data, dict) and matches_data.get('status') == 200:
-                for m in matches_data.get('data', []):
-                    meta = m.get('metadata', {})
-                    mode = str(meta.get('mode', 'Unknown'))
-                    rounds = meta.get('rounds_played', 1)
-                    if not mode or mode.strip() in ["-", "--"]: continue
-                    
-                    players = m.get('players', {}).get('all_players', [])
-                    p = next((p for p in players if p.get('name', '').lower() == name.lower()), None)
-                    
-                    if p:
-                        st = p.get('stats', {})
-                        k, d, a = st.get('kills', 0), st.get('deaths', 0), st.get('assists', 0)
-                        score = st.get('score', 0)
-                        acs = round(score / rounds) if rounds > 0 else 0
-                        
-                        team = (p.get('team') or 'Unknown').lower()
-                        is_win = m.get('teams', {}).get(team, {}).get('has_won', False)
-                        result = "WIN" if is_win else "LOSS"
-                        
-                        full_match_rows.append({
-                            'mode': mode,
-                            'result': result,
-                            'kda': f"{k}/{d}/{a}",
-                            'acs': acs
-                        })
-
-            matches_embed = discord.Embed(
-                title=f"LỊCH SỬ ĐẤU - {name}#{tag}",
-                color=rank_color
-            )
-            matches_embed.set_thumbnail(url=rank_icon)
-            
-            if full_match_rows:
-                # Mode width limited to 12 for better alignment in mobile/compact view
-                mode_width = max(min(max(len(r['mode']) for r in full_match_rows), 12), 8)
-                header = f"{'MODE':<{mode_width}}|{'RES':^4}|{'K/D/A':^8}|{'ACS':^4}"
-                detailed_stats = f"```\n{header}\n{'-' * len(header)}\n"
-                for r in full_match_rows:
-                    m_display = r['mode'][:mode_width]
-                    detailed_stats += f"{m_display:<{mode_width}}|{r['result'][:4]:^4}|{r['kda']:^8}|{r['acs']:^4}\n"
-                detailed_stats += "```"
-            else:
-                detailed_stats = "```\nKhông tìm thấy dữ liệu trận đấu.\n```"
-            
-            matches_embed.add_field(name="Kết quả 5 trận gần nhất", value=detailed_stats, inline=False)
-            if card_wide:
-                matches_embed.set_image(url=card_wide)
-            matches_embed.set_footer(text="Inu Bot")
-
-            await interaction.followup.send(embed=profile_embed, view=PlayerStatsPagination(profile_embed, matches_embed))
-            
-        except Exception as e:
-            await interaction.followup.send(f"Đã xảy ra lỗi: {str(e)}", ephemeral=True)
-
-class StatView(discord.ui.View):
-    def __init__(self, api: ValorantAPI) -> None:
-        super().__init__(timeout=None)
-        self.api = api
-
-    @discord.ui.button(label="TRA CỨU NGAY", style=discord.ButtonStyle.success, custom_id="stat_lookup_btn")
-    async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        await interaction.response.send_modal(StatModal(self.api))
+from utils import ValorantAPI
+from views.stat_views import StatView, process_and_send_stats
 
 class StatsCog(commands.Cog):
+    """Cog for Valorant player statistics and account linking."""
+    
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.api: ValorantAPI = getattr(bot, 'v_api')
 
-    @app_commands.command(name="stat", description="Tra cứu chỉ số Valorant của người chơi")
-    async def stat_slash(self, interaction: discord.Interaction) -> None:
-        await self._send_stat_intro(interaction)
+    @app_commands.command(name="link", description="Link your Discord account to a Valorant Riot ID")
+    @app_commands.describe(name="Riot ID (e.g. TenZ)", tag="Tagline without # (e.g. SEN)")
+    async def link(self, interaction: discord.Interaction, name: str, tag: str) -> None:
+        """Links the user's Discord ID to a Riot ID."""
+        await interaction.response.defer(ephemeral=True)
+        
+        # Verify account exists first
+        acc_data = await self.api.get_account_info(name, tag)
+        if not acc_data or acc_data.get('status') != 200:
+            await interaction.followup.send(f"❌ Could not find account **{name}#{tag}**. Please check again.", ephemeral=True)
+            return
+            
+        # Get standardized name from API
+        real_name = acc_data['data']['name']
+        real_tag = acc_data['data']['tag']
+        
+        await self.api.link_user(interaction.user.id, real_name, real_tag)
+        await interaction.followup.send(f"✅ Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
+
+    @app_commands.command(name="unlink", description="Unlink your Valorant account from Discord")
+    async def unlink(self, interaction: discord.Interaction) -> None:
+        """Unlinks the user's Discord ID."""
+        success = await self.api.unlink_user(interaction.user.id)
+        if success:
+            await interaction.response.send_message("✅ Successfully unlinked your account.", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ You don't have a linked account.", ephemeral=True)
+
+    @app_commands.command(name="stat", description="Lookup Valorant player statistics globally")
+    @app_commands.describe(user="The Discord user to check", name="Riot ID (manual)", tag="Tagline (manual)")
+    async def stat_slash(
+        self, 
+        interaction: discord.Interaction, 
+        user: Optional[discord.Member] = None,
+        name: Optional[str] = None,
+        tag: Optional[str] = None
+    ) -> None:
+        """Lookup stats. Logic handles automatic lookup for linked accounts."""
+        
+        # 1. Manual search via arguments
+        if name and tag:
+            await interaction.response.defer()
+            await process_and_send_stats(interaction, self.api, name, tag)
+            return
+            
+        # 2. Lookup for a specific member
+        target = user or interaction.user
+        link = self.api.get_user_link(target.id)
+        
+        if link:
+            # Found linked account, jump straight to results
+            await interaction.response.defer()
+            await process_and_send_stats(interaction, self.api, link[0], link[1])
+        else:
+            # No link found and no manual name/tag, show search UI
+            if user:
+                # User specifically asked for someone who isn't linked
+                await interaction.response.send_message(f"❌ {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
+            else:
+                # Just show the generic search UI
+                await self._send_stat_intro(interaction)
 
     @commands.command(name="stat")
-    async def stat_prefix(self, ctx: commands.Context) -> None:
+    async def stat_prefix(self, ctx: commands.Context, name: Optional[str] = None, tag: Optional[str] = None) -> None:
+        """Prefix command version."""
+        if name and tag:
+            # Special bypass for prefix command
+            # We need a fake interaction-like object or just call the fetch logic if we refactor it further
+            # For simplicity, if prefix command is used with args, we'll just implement the logic here
+            # But according to user rules, we should use slash commands mostly.
+            # I'll keep prefix command as simple entry point to the view.
+            pass
+
+        link = self.api.get_user_link(ctx.author.id)
+        if not name and link:
+            # We can't easily use the interaction-based process_and_send_stats for prefix commands without a lot of hacking
+            # So we'll just send the intro for now, or tell them to use slash.
+            await ctx.send("💡 Please use `/stat` for better experience, or use the button below.")
+            
         await self._send_stat_intro(ctx)
 
     async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context]) -> None:
+        """Sends the initial interaction for stat lookup."""
         view = StatView(self.api)
         embed = discord.Embed(
             title="VALORANT TRACKER",
             description=(
-                "Chào mừng bạn đến với hệ thống theo dõi Valorant.\n\n"
-                "Nhấn nút bên dưới để xem:\n"
-                "• **Rank & RR hiện tại**\n"
-                "• **Lịch sử 5 trận đấu mới nhất**\n"
-                "• **Chỉ số K/D/A & ACS chi tiết**"
+                "> Directly retrieves data from Riot Games server.\n"
+                "Please click the button below to start.\n\n"
+                "**AVAILABLE DATA INCLUDES:**\n"
+                "```yaml\n"
+                "➤ Profile Level, Rank & Rank Rating (RR)\n"
+                "➤ Kills/Deaths/Assists (K/D/A), Combat Score (ACS)\n"
+                "➤ Results & Match History for the last 5 games\n"
+                "```\n"
+                "💡 **TIP:** Use `/link` to connect your account and skip this step next time!"
             ),
             color=0xFD4553
         )
+        embed.set_thumbnail(url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
         embed.set_image(url="https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt76953f937803e480/6234eff4093f413d727b14fc/032322_V_Ep4_Act3_Disruption_Social.jpg")
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
 
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)
