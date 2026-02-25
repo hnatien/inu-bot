@@ -73,7 +73,6 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     peak_data = mmr_full.get('peak', {})
     peak_tier = peak_data.get('tier', {})
     peak_rank = str(peak_tier.get('name', 'Unknown'))
-    peak_season = peak_data.get('season', {}).get('short', '???')
     
     rank_lower = rank.lower()
     if "radiant" in rank_lower or "immortal" in rank_lower or "unrated" in rank_lower:
@@ -85,7 +84,7 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     desc_lines = f"**Rank:** {rank}\n{progress_bar}"
     if peak_rank.lower() not in ("unknown", "unrated"):
         _, peak_icon = api.get_rank_assets(peak_rank)
-        desc_lines += f"\n\n🏔️ **Peak Rank:** {peak_rank} ({peak_season})"
+        desc_lines += f"\n\n🏔️ **Peak Rank:** {peak_rank}"
     
     profile_embed = discord.Embed(
         title=f"{name}#{tag}",
