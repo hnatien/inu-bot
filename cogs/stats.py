@@ -76,22 +76,8 @@ class StatsCog(commands.Cog):
                 await self._send_stat_intro(interaction)
 
     @commands.command(name="stat")
-    async def stat_prefix(self, ctx: commands.Context, name: Optional[str] = None, tag: Optional[str] = None) -> None:
+    async def stat_prefix(self, ctx: commands.Context) -> None:
         """Prefix command version."""
-        if name and tag:
-            # Special bypass for prefix command
-            # We need a fake interaction-like object or just call the fetch logic if we refactor it further
-            # For simplicity, if prefix command is used with args, we'll just implement the logic here
-            # But according to user rules, we should use slash commands mostly.
-            # I'll keep prefix command as simple entry point to the view.
-            pass
-
-        link = self.api.get_user_link(ctx.author.id)
-        if not name and link:
-            # We can't easily use the interaction-based process_and_send_stats for prefix commands without a lot of hacking
-            # So we'll just send the intro for now, or tell them to use slash.
-            await ctx.send("💡 Please use `/stat` for better experience, or use the button below.")
-            
         await self._send_stat_intro(ctx)
 
     async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context]) -> None:

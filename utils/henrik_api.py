@@ -1,5 +1,6 @@
 import logging
 import os
+import urllib.parse
 from typing import Dict, Optional, Any
 
 import aiohttp
@@ -26,9 +27,7 @@ class HenrikAPI:
 
     async def _request(self, endpoint: str, session: aiohttp.ClientSession) -> Optional[Dict[str, Any]]:
         """Generic wrapper for HenrikDev API requests"""
-        # Add API key to query params as fallback for some versions
-        separator = "&" if "?" in endpoint else "?"
-        url = f"https://api.henrikdev.xyz/valorant/{endpoint}{separator}api_key={self.henrik_key}" if self.henrik_key else f"https://api.henrikdev.xyz/valorant/{endpoint}"
+        url = f"https://api.henrikdev.xyz/valorant/{endpoint}"
         
         h = {"Authorization": self.henrik_key} if self.henrik_key else {}
         try:
@@ -47,7 +46,6 @@ class HenrikAPI:
 
     async def get_stats(self, name: str, tag: str, session: aiohttp.ClientSession, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get MMR/Rank stats (v3 is the latest)"""
-        import urllib.parse
         safe_name = urllib.parse.quote(name)
         safe_tag = urllib.parse.quote(tag)
         target_region = region if region else self.region

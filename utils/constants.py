@@ -1,9 +1,6 @@
 from typing import Dict, List, Any
 
-VP_IDS: List[str] = [
-    "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741",
-    "85ad2bf4-453b-4c30-b744-fbb39b1a53aa"
-]
+
 
 VP_ICON_URL: str = (
     "https://media.valorant-api.com/currencies/"

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import aiofiles
@@ -9,6 +10,7 @@ class UserManager:
     def __init__(self, file_path: str = "assets/users.json") -> None:
         self.file_path = file_path
         self.users: Dict[str, Dict[str, str]] = {}
+        self._lock = asyncio.Lock()
         
     async def load(self) -> None:
         """Load linked accounts from JSON file."""
@@ -28,8 +30,9 @@ class UserManager:
 
     async def save(self) -> None:
         """Save current linked accounts to JSON file."""
-        async with aiofiles.open(self.file_path, mode='w') as f:
-            await f.write(json.dumps(self.users, indent=2))
+        async with self._lock:
+            async with aiofiles.open(self.file_path, mode='w') as f:
+                await f.write(json.dumps(self.users, indent=2))
 
     async def link_user(self, discord_id: int, name: str, tag: str) -> None:
         """Link a Discord ID to a Riot ID."""

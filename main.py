@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from utils import ValorantAPI
 from typing import Optional
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('ValorantBot')
 
@@ -22,14 +21,11 @@ class ValorantBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         """Initialize cogs and API session"""
-        # Load extensions
         await self.load_extension('cogs.stats')
         await self.load_extension('cogs.shop')
         
-        # Initialize API session
         await self.v_api.init_session()
         
-        # Sync slash commands
         try:
             synced = await self.tree.sync()
             logger.info(f"Synced {len(synced)} command(s)")

@@ -242,7 +242,7 @@ class StatModal(discord.ui.Modal, title='VALORANT STATS LOOKUP'):
 
 class StatView(discord.ui.View):
     def __init__(self, api: ValorantAPI) -> None:
-        super().__init__(timeout=None)
+        super().__init__(timeout=300)
         self.api = api
 
     @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger, emoji="🔎", custom_id="stat_lookup_btn")

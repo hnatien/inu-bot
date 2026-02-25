@@ -1,9 +1,14 @@
 import discord
+from discord.ext import commands
 from typing import Dict, Any, Union
+
 from utils import ValorantAPI
+from utils.riot_auth import AuthResult
+from utils.constants import VP_ICON_URL
+
 
 class ShopModal(discord.ui.Modal):
-    def __init__(self, api: ValorantAPI, context: Union[discord.Interaction, discord.Interaction], mode: str = "shop") -> None:
+    def __init__(self, api: ValorantAPI, context: Union[discord.Interaction, commands.Context], mode: str = "shop") -> None:
         title = 'XÁC THỰC Cửa Hàng' if mode == "shop" else 'XÁC THỰC Night Market'
         super().__init__(title=title)
         self.api = api
@@ -20,19 +25,19 @@ class ShopModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
-        
-        success, message = await self.api.auth_with_url(self.url_input.value)
-        if not success:
+
+        success, message, auth = await self.api.auth_with_url(self.url_input.value)
+        if not success or not auth:
             await interaction.followup.send(f"❌ {message}")
             return
 
         if self.mode == "shop":
-            await self._handle_shop(interaction)
+            await self._handle_shop(interaction, auth)
         else:
-            await self._handle_nightmarket(interaction)
+            await self._handle_nightmarket(interaction, auth)
 
-    async def _handle_shop(self, interaction: discord.Interaction) -> None:
-        data = await self.api.get_shop()
+    async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult) -> None:
+        data = await self.api.get_shop(auth)
         if not data:
             await interaction.followup.send("❌ Không lấy được dữ liệu Daily Shop từ Riot.")
             return
@@ -46,7 +51,7 @@ class ShopModal(discord.ui.Modal):
 
         header = discord.Embed(
             title="🎯 DAILY SHOP",
-            description=f"Cửa hàng của **{self.api.game_name}#{self.api.tag_line}**\nHết hạn sau: **{time_str}**",
+            description=f"Cửa hàng của **{auth.game_name}#{auth.tag_line}**\nHết hạn sau: **{time_str}**",
             color=0x2b2d31
         )
         header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
@@ -62,8 +67,8 @@ class ShopModal(discord.ui.Modal):
         else:
             await interaction.followup.send(embeds=embeds)
 
-    async def _handle_nightmarket(self, interaction: discord.Interaction) -> None:
-        data = await self.api.get_nightmarket()
+    async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult) -> None:
+        data = await self.api.get_nightmarket(auth)
         if not data:
             await interaction.followup.send("❌ Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
             return
@@ -74,7 +79,7 @@ class ShopModal(discord.ui.Modal):
 
         header = discord.Embed(
             title="🌙 NIGHT MARKET",
-            description=f"Night Market của **{self.api.game_name}#{self.api.tag_line}**\nHết hạn sau: **{time_str}**",
+            description=f"Night Market của **{auth.game_name}#{auth.tag_line}**\nHết hạn sau: **{time_str}**",
             color=0x2b2d31
         )
         header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
@@ -86,7 +91,7 @@ class ShopModal(discord.ui.Modal):
                 rewards = item.get('Offer', {}).get('Rewards', [])
                 if rewards:
                     offer_id = rewards[0].get('ItemID')
-            
+
             if not offer_id:
                 continue
 
@@ -115,19 +120,21 @@ class ShopModal(discord.ui.Modal):
 
         base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
         final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
-        
+
         rarity_info = self.api.get_rarity_info(rarity_uuid)
-        
+
         desc = f"**🔥 Giảm giá: {discount}%**" if discount > 0 else ""
         embed = discord.Embed(title=name, description=desc, color=rarity_info['color'])
-        if icon: embed.set_thumbnail(url=icon)
-        
+        if icon:
+            embed.set_thumbnail(url=icon)
+
         price_text = f"{final_price:,} VP" if final_price > 0 else "N/A"
-        embed.set_footer(text=price_text, icon_url=self.api.VP_ICON_URL)
+        embed.set_footer(text=price_text, icon_url=VP_ICON_URL)
         return embed
 
+
 class ShopView(discord.ui.View):
-    def __init__(self, api: ValorantAPI, auth_url: str, context: Union[discord.Interaction, discord.Interaction], mode: str = "shop") -> None:
+    def __init__(self, api: ValorantAPI, auth_url: str, context: Union[discord.Interaction, commands.Context], mode: str = "shop") -> None:
         super().__init__(timeout=300)
         self.api = api
         self.context = context
