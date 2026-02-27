@@ -1,6 +1,8 @@
 import logging
 import os
 from typing import Optional, Tuple
+
+from utils.i18n import DEFAULT_LANG
 from motor.motor_asyncio import AsyncIOMotorClient
 
 logger = logging.getLogger('UserManager')
@@ -47,7 +49,7 @@ class UserManager:
             return None
 
         data = await self.collection.find_one({"discord_id": str(discord_id)})
-        if data:
+        if data and "name" in data:
             return data["name"], data["tag"], data.get("region")
         return None
 
@@ -58,3 +60,21 @@ class UserManager:
 
         result = await self.collection.delete_one({"discord_id": str(discord_id)})
         return result.deleted_count > 0
+
+    async def get_language(self, discord_id: int) -> str:
+        if self.collection is None:
+            return DEFAULT_LANG
+        data = await self.collection.find_one({"discord_id": str(discord_id)})
+        if data:
+            return data.get("lang", DEFAULT_LANG)
+        return DEFAULT_LANG
+
+    async def set_language(self, discord_id: int, lang: str) -> bool:
+        if self.collection is None:
+            return False
+        await self.collection.update_one(
+            {"discord_id": str(discord_id)},
+            {"$set": {"lang": lang}},
+            upsert=True
+        )
+        return True

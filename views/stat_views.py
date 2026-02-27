@@ -5,19 +5,21 @@ import discord
 from discord.ext import commands
 
 from utils import ValorantAPI
+from utils.i18n import t, DEFAULT_LANG
 
 
 class PlayerStatsPagination(discord.ui.View):
-    def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed, owner_id: int) -> None:
+    def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed, owner_id: int, lang: str = DEFAULT_LANG) -> None:
         super().__init__(timeout=120)
         self.p_embed = p_embed
         self.m_embed = m_embed
         self.current = 0
         self.owner_id = owner_id
+        self.lang = lang
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("Bạn không thể sử dụng nút này.", ephemeral=True)
+            await interaction.response.send_message(t("button_denied", self.lang), ephemeral=True)
             return False
         return True
 
@@ -33,7 +35,7 @@ class PlayerStatsPagination(discord.ui.View):
             await interaction.response.edit_message(embed=self.p_embed, view=self)
 
 
-async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str, region: Optional[str] = None) -> None:
+async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str, region: Optional[str] = None, lang: str = DEFAULT_LANG) -> None:
     """Core logic to fetch data and send the player stats embed."""
     
     async def send_response(content: str = None, embed: discord.Embed = None, view: discord.ui.View = None, ephemeral: bool = False):
@@ -60,7 +62,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         if not acc_data or acc_data.get('status') != 200:
             error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
             await send_response(
-                content=f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
+                content=f"[Error] {t('stat_error_account', lang, name=name, tag=tag, error=error_msg)}", 
                 ephemeral=True
             )
             return
@@ -85,7 +87,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     if mmr_data.get('status') != 200:
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
         await send_response(
-            content=f"[Error] Could not find rank data for **{name}#{tag}**.\nDetails: {error_msg}\n*Ensure the player has played at least 1 recent competitive match.*", 
+            content=f"[Error] {t('stat_error_rank', lang, name=name, tag=tag, error=error_msg)}", 
             ephemeral=True
         )
         return
@@ -222,7 +224,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     else:
         matches_embed.add_field(
             name="No Data", 
-            value="```\nNo recent matches found.\n```", 
+            value=f"```\n{t('stat_no_matches', lang)}\n```", 
             inline=False
         )
     
@@ -232,37 +234,41 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
 
     await send_response(
         embed=profile_embed, 
-        view=PlayerStatsPagination(profile_embed, matches_embed, owner_id)
+        view=PlayerStatsPagination(profile_embed, matches_embed, owner_id, lang=lang)
     )
 
 
-class StatModal(discord.ui.Modal, title='VALORANT STATS LOOKUP'):
-    name_input = discord.ui.TextInput(
-        label='In-game Name (Riot ID)',
-        placeholder='Example: inu inu',
-        required=True,
-        max_length=16
-    )
-    tag_input = discord.ui.TextInput(
-        label='Tagline (without #)',
-        placeholder='Example: 2804',
-        required=True,
-        min_length=3,
-        max_length=5
-    )
-
-    def __init__(self, api: ValorantAPI) -> None:
-        super().__init__()
+class StatModal(discord.ui.Modal):
+    def __init__(self, api: ValorantAPI, lang: str = DEFAULT_LANG) -> None:
+        super().__init__(title=t("stat_modal_title", lang))
         self.api = api
+        self.lang = lang
+
+        self.name_input = discord.ui.TextInput(
+            label=t("stat_modal_name", lang),
+            placeholder='Example: inu inu',
+            required=True,
+            max_length=16
+        )
+        self.add_item(self.name_input)
+
+        self.tag_input = discord.ui.TextInput(
+            label=t("stat_modal_tag", lang),
+            placeholder='Example: 2804',
+            required=True,
+            min_length=3,
+            max_length=5
+        )
+        self.add_item(self.tag_input)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         name = self.name_input.value.strip()
         tag = self.tag_input.value.strip()
         await interaction.response.defer(ephemeral=False)
-        await process_and_send_stats(interaction, self.api, name, tag)
+        await process_and_send_stats(interaction, self.api, name, tag, lang=self.lang)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        msg = f"[Error] An error occurred: `{str(error)}`"
+        msg = f"[Error] {t('stat_modal_error', self.lang, error=str(error))}"
         if not interaction.response.is_done():
             await interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -270,17 +276,18 @@ class StatModal(discord.ui.Modal, title='VALORANT STATS LOOKUP'):
 
 
 class StatView(discord.ui.View):
-    def __init__(self, api: ValorantAPI, owner_id: int) -> None:
+    def __init__(self, api: ValorantAPI, owner_id: int, lang: str = DEFAULT_LANG) -> None:
         super().__init__(timeout=300)
         self.api = api
         self.owner_id = owner_id
+        self.lang = lang
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("Bạn không thể sử dụng nút này.", ephemeral=True)
+            await interaction.response.send_message(t("button_denied", self.lang), ephemeral=True)
             return False
         return True
 
     @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger)
     async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        await interaction.response.send_modal(StatModal(self.api))
+        await interaction.response.send_modal(StatModal(self.api, lang=self.lang))

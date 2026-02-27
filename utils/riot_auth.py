@@ -8,6 +8,8 @@ from typing import Dict, Tuple, Optional
 
 import aiohttp
 
+from utils.i18n import t, DEFAULT_LANG
+
 logger = logging.getLogger('RiotAuth')
 
 
@@ -63,7 +65,7 @@ class RiotAuth:
             self._version_fetched_at = now
             return self._cached_version
 
-    async def auth_with_url(self, url: str, session: aiohttp.ClientSession) -> Tuple[bool, str, Optional[AuthResult]]:
+    async def auth_with_url(self, url: str, session: aiohttp.ClientSession, lang: str = DEFAULT_LANG) -> Tuple[bool, str, Optional[AuthResult]]:
         """Authenticate using the redirect URL. Returns per-request AuthResult to avoid race conditions."""
         headers = dict(self.BASE_HEADERS)
         headers['X-Riot-ClientPlatform'] = self.CLIENT_PLATFORM
@@ -74,7 +76,7 @@ class RiotAuth:
 
             access_token_match = re.search(r'access_token=([^&]+)', url)
             if not access_token_match:
-                return False, "Không tìm thấy Access Token. Hãy copy toàn bộ URL.", None
+                return False, t("auth_no_token", lang), None
 
             access_token = access_token_match.group(1)
             headers['Authorization'] = f"Bearer {access_token}"
@@ -86,7 +88,7 @@ class RiotAuth:
             ) as resp:
                 data = await resp.json()
                 if resp.status != 200:
-                    return False, f"Lỗi Entitlements ({resp.status}): {data.get('message', 'Unknown Error')}", None
+                    return False, t("auth_entitlements_error", lang, status=resp.status, message=data.get('message', 'Unknown Error')), None
                 headers['X-Riot-Entitlements-JWT'] = data['entitlements_token']
 
             async with session.get(
@@ -100,15 +102,15 @@ class RiotAuth:
                 tag_line = acct.get('tag_line', 'NA1')
 
                 if puuid:
-                    return True, "Xác thực thành công!", AuthResult(
+                    return True, t("auth_success", lang), AuthResult(
                         puuid=puuid, game_name=game_name,
                         tag_line=tag_line, headers=headers
                     )
-                return False, "Không tìm thấy User ID.", None
+                return False, t("auth_no_user", lang), None
 
         except Exception as e:
             error_msg = str(e)
             if 'access_token' in error_msg.lower() or 'bearer' in error_msg.lower():
                 error_msg = "Authentication failed (details preserved for log)"
             logger.error(f"Auth error: {error_msg}")
-            return False, "Lỗi hệ thống khi xác thực. Vui lòng thử lại.", None
+            return False, t("auth_system_error", lang), None

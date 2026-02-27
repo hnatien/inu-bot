@@ -51,10 +51,10 @@ class ValorantAPI:
     def get_auth_link(self) -> str:
         return self.auth.get_auth_link()
 
-    async def auth_with_url(self, url: str) -> Tuple[bool, str, Optional[AuthResult]]:
+    async def auth_with_url(self, url: str, lang: str = "vi") -> Tuple[bool, str, Optional[AuthResult]]:
         if not self.session:
             await self.init_session()
-        return await self.auth.auth_with_url(url, self.session)
+        return await self.auth.auth_with_url(url, self.session, lang=lang)
 
     async def get_stats(self, name: str, tag: str, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         if not self.session:
@@ -130,6 +130,12 @@ class ValorantAPI:
 
     async def unlink_user(self, discord_id: int) -> bool:
         return await self.user_manager.unlink_user(discord_id)
+
+    async def get_language(self, discord_id: int) -> str:
+        return await self.user_manager.get_language(discord_id)
+
+    async def set_language(self, discord_id: int, lang: str) -> bool:
+        return await self.user_manager.set_language(discord_id, lang)
 
     def get_rank_assets(self, rank_name: str) -> Tuple[int, str]:
         """Get color and icon URL for a specific rank with correct tier handling"""

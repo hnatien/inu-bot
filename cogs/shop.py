@@ -5,6 +5,7 @@ from typing import Union
 import logging
 
 from utils import ValorantAPI
+from utils.i18n import t
 from views.shop_views import ShopView
 
 logger = logging.getLogger('ShopCog')
@@ -16,15 +17,18 @@ class ShopCog(commands.Cog):
         self.bot = bot
         self.api: ValorantAPI = getattr(bot, 'v_api')
 
-    @app_commands.command(name="shop", description="Xem Daily Shop của bạn")
+    async def _get_lang(self, user_id: int) -> str:
+        return await self.api.get_language(user_id)
+
+    @app_commands.command(name="shop", description="View your Daily Shop")
     async def shop_slash(self, interaction: discord.Interaction) -> None:
         await self._send_intro(interaction, mode="shop")
 
-    @app_commands.command(name="nightmarket", description="Xem Night Market của bạn")
+    @app_commands.command(name="nightmarket", description="View your Night Market")
     async def nightmarket_slash(self, interaction: discord.Interaction) -> None:
         await self._send_intro(interaction, mode="nightmarket")
 
-    @app_commands.command(name="safety", description="Giải thích về tính an toàn khi sử dụng tính năng Shop/Night Market")
+    @app_commands.command(name="safety", description="Learn about the security of the Shop/Night Market feature")
     async def safety_slash(self, interaction: discord.Interaction) -> None:
         await self._send_safety_msg(interaction)
 
@@ -33,20 +37,12 @@ class ShopCog(commands.Cog):
         await self._send_safety_msg(ctx)
 
     async def _send_safety_msg(self, context: Union[discord.Interaction, commands.Context]) -> None:
-        description = (
-            "Hệ thống sử dụng cơ chế **OAuth2 Implicit Grant** của Riot Games, tương tự như cách các trang web như "
-            "tracker.gg hay các ứng dụng mã nguồn mở uy tín đang hoạt động.\n\n"
-            "**Tại sao phương thức này an toàn?**\n"
-            "1. **Không yêu cầu Mật khẩu:** Bạn đăng nhập trực tiếp trên trang chủ `auth.riotgames.com`. Bot hoàn toàn không can thiệp vào quá trình này.\n"
-            "2. **Cơ chế Token:** Link bạn cung cấp chỉ chứa *Access Token* - một dạng 'mã định danh tạm thời'. Nó chỉ có quyền đọc dữ liệu cửa hàng và MMR, không thể đổi mật khẩu hay thực hiện giao dịch.\n"
-            "3. **Không lưu trữ:** Bot chỉ sử dụng Token trong bộ nhớ tạm (RAM) để truy vấn API và sẽ bị xóa ngay sau khi phiên làm việc kết thúc.\n"
-            "4. **Zero Logs:** Chúng tôi cam kết không ghi nhận (log) bất kỳ Token nào vào cơ sở dữ liệu.\n\n"
-            "*Khuyến cáo: Luôn sử dụng xác thực 2 lớp (2FA) cho tài khoản Riot của bạn để đảm bảo an toàn tối đa.*"
-        )
-        
+        user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
+        lang = await self._get_lang(user_id)
+
         embed = discord.Embed(
-            title="GIẢI THÍCH VỀ BẢO MẬT",
-            description=description,
+            title=t("safety_title", lang),
+            description=t("safety_desc", lang),
             color=0xfa4454
         )
         embed.set_footer(text="Inu Bot")
@@ -65,31 +61,25 @@ class ShopCog(commands.Cog):
         await self._send_intro(ctx, mode="nightmarket")
 
     async def _send_intro(self, context: Union[discord.Interaction, commands.Context], mode: str = "shop") -> None:
+        user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
+        lang = await self._get_lang(user_id)
+
         auth_url = self.api.get_auth_link()
-        view = ShopView(self.api, auth_url, context, mode=mode)
+        view = ShopView(self.api, auth_url, context, mode=mode, lang=lang)
         
         display_mode = "Daily Shop" if mode == "shop" else "Night Market"
         title = "VALORANT STORE" if mode == "shop" else "NIGHT MARKET"
-        description = (
-            f"Vui lòng thực hiện các bước sau để xem **{display_mode}**:\n\n"
-            "> **1.** Nhấn nút **`1. Đăng nhập Riot`** bên dưới.\n"
-            "> **2.** Đăng nhập vào tài khoản Riot Games của bạn.\n"
-            "> **3.** Chờ trang web chuyển hướng (có thể hiển thị trang trắng hoặc lỗi).\n"
-            "> **4.** **Copy toàn bộ URL** (thanh địa chỉ) của trang web đó.\n"
-            "> **5.** Quay lại đây, nhấn **`2. Dán Link vào đây`** và gửi link bạn vừa copy.\n\n"
-            "*Lưu ý: Bạn có thể tham khảo lệnh `/safety` để hiểu rõ hơn về bảo mật tài khoản.*"
-        )
-        
+
         embed = discord.Embed(
             title=title,
-            description=description,
+            description=t("shop_intro", lang, mode=display_mode),
             color=0xfa4454
         )
         
         if isinstance(context, discord.Interaction):
-            embed.set_footer(text="Thực hiện bởi Inu Bot", icon_url=context.user.display_avatar.url)
+            embed.set_footer(text=t("footer", lang), icon_url=context.user.display_avatar.url)
         else:
-            embed.set_footer(text="Thực hiện bởi Inu Bot", icon_url=context.author.display_avatar.url)
+            embed.set_footer(text=t("footer", lang), icon_url=context.author.display_avatar.url)
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)
