@@ -117,6 +117,13 @@ class ValorantAssets:
             {'name': 'Unknown', 'color': 0x2b2d31, 'gun_price': 0, 'melee_price': 0}
         )
 
+    def get_rarity_icon(self, rarity_uuid: Optional[str]) -> Optional[str]:
+        """Get the display icon URL for a content tier"""
+        if not rarity_uuid:
+            return None
+        tier = self.rarity_map.get(rarity_uuid)
+        return tier.get('icon') if tier else None
+
     def get_hardcoded_price(
         self,
         rarity_uuid: Optional[str],

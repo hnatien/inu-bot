@@ -113,6 +113,9 @@ class ValorantAPI:
     def get_rarity_info(self, rarity_uuid: Optional[str]) -> Dict[str, Any]:
         return self.assets.get_rarity_info(rarity_uuid)
 
+    def get_rarity_icon(self, rarity_uuid: Optional[str]) -> Optional[str]:
+        return self.assets.get_rarity_icon(rarity_uuid)
+
     def get_hardcoded_price(self, rarity_uuid: Optional[str], is_melee: bool = False, level_uuid: Optional[str] = None) -> int:
         return self.assets.get_hardcoded_price(rarity_uuid, is_melee, level_uuid)
 

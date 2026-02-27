@@ -136,9 +136,14 @@ class ShopModal(discord.ui.Modal):
         final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
 
         rarity_info = self.api.get_rarity_info(rarity_uuid)
+        rarity_icon = self.api.get_rarity_icon(rarity_uuid)
 
         desc = f"**Giảm giá: {discount}%**" if discount > 0 else ""
-        embed = discord.Embed(title=name, description=desc, color=rarity_info['color'])
+        embed = discord.Embed(description=desc, color=rarity_info['color'])
+        if rarity_icon:
+            embed.set_author(name=name, icon_url=rarity_icon)
+        else:
+            embed.set_author(name=name)
         if icon:
             embed.set_thumbnail(url=icon)
 
