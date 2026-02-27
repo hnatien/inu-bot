@@ -1,55 +1,58 @@
-import asyncio
-import json
+import logging
 import os
-import aiofiles
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
+from motor.motor_asyncio import AsyncIOMotorClient
+
+logger = logging.getLogger('UserManager')
 
 class UserManager:
-    """Manages linking of Discord IDs to Valorant Riot IDs."""
+    """Manages linking of Discord IDs to Valorant Riot IDs using MongoDB."""
     
-    def __init__(self, file_path: str = "assets/users.json") -> None:
-        self.file_path = file_path
-        self.users: Dict[str, Dict[str, str]] = {}
-        self._lock = asyncio.Lock()
+    def __init__(self) -> None:
+        self.uri = os.getenv("MONGO_URI")
+        self.client: Optional[AsyncIOMotorClient] = None
+        self.db = None
+        self.collection = None
         
     async def load(self) -> None:
-        """Load linked accounts from JSON file."""
-        if not os.path.exists(self.file_path):
-            # Ensure assets directory exists
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-            async with aiofiles.open(self.file_path, mode='w') as f:
-                await f.write(json.dumps({}))
+        """Initialize MongoDB connection."""
+        if not self.uri:
+            logger.error("MONGO_URI not found in environment variables.")
             return
 
-        async with aiofiles.open(self.file_path, mode='r') as f:
-            content = await f.read()
-            try:
-                self.users = json.loads(content)
-            except json.JSONDecodeError:
-                self.users = {}
-
-    async def save(self) -> None:
-        """Save current linked accounts to JSON file."""
-        async with self._lock:
-            async with aiofiles.open(self.file_path, mode='w') as f:
-                await f.write(json.dumps(self.users, indent=2))
+        try:
+            self.client = AsyncIOMotorClient(self.uri)
+            self.db = self.client.get_database("inu_bot")
+            self.collection = self.db.users
+            logger.info("Successfully connected to MongoDB.")
+        except Exception as e:
+            logger.error(f"Failed to connect to MongoDB: {e}")
 
     async def link_user(self, discord_id: int, name: str, tag: str) -> None:
-        """Link a Discord ID to a Riot ID."""
-        self.users[str(discord_id)] = {"name": name, "tag": tag}
-        await self.save()
+        """Link a Discord ID to a Riot ID in MongoDB."""
+        if self.collection is None:
+            return
 
-    def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
-        """Get the Riot ID and Tag for a Discord ID."""
-        data = self.users.get(str(discord_id))
+        await self.collection.update_one(
+            {"discord_id": str(discord_id)},
+            {"$set": {"name": name, "tag": tag}},
+            upsert=True
+        )
+
+    async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
+        """Get the Riot ID and Tag for a Discord ID from MongoDB."""
+        if self.collection is None:
+            return None
+
+        data = await self.collection.find_one({"discord_id": str(discord_id)})
         if data:
             return data["name"], data["tag"]
         return None
 
     async def unlink_user(self, discord_id: int) -> bool:
-        """Unlink a Discord ID."""
-        if str(discord_id) in self.users:
-            del self.users[str(discord_id)]
-            await self.save()
-            return True
-        return False
+        """Unlink a Discord ID from MongoDB."""
+        if self.collection is None:
+            return False
+
+        result = await self.collection.delete_one({"discord_id": str(discord_id)})
+        return result.deleted_count > 0

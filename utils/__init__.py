@@ -119,8 +119,8 @@ class ValorantAPI:
     async def link_user(self, discord_id: int, name: str, tag: str) -> None:
         await self.user_manager.link_user(discord_id, name, tag)
 
-    def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
-        return self.user_manager.get_user_link(discord_id)
+    async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
+        return await self.user_manager.get_user_link(discord_id)
 
     async def unlink_user(self, discord_id: int) -> bool:
         return await self.user_manager.unlink_user(discord_id)

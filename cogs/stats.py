@@ -19,13 +19,11 @@ class StatsCog(commands.Cog):
         """Links the user's Discord ID to a Riot ID."""
         await interaction.response.defer(ephemeral=True)
         
-        # Verify account exists first
         acc_data = await self.api.get_account_info(name, tag)
         if not acc_data or acc_data.get('status') != 200:
             await interaction.followup.send(f"[Error] Could not find account **{name}#{tag}**. Please check again.", ephemeral=True)
             return
             
-        # Get standardized name from API
         real_name = acc_data['data']['name']
         real_tag = acc_data['data']['tag']
         
@@ -50,35 +48,32 @@ class StatsCog(commands.Cog):
         name: Optional[str] = None,
         tag: Optional[str] = None
     ) -> None:
-        """Lookup stats. Logic handles automatic lookup for linked accounts."""
+        """Lookup stats with automatic linked account detection."""
         
-        # 1. Manual search via arguments
         if name and tag:
             await interaction.response.defer()
             await process_and_send_stats(interaction, self.api, name, tag)
             return
             
-        # 2. Lookup for a specific member
         target = user or interaction.user
-        link = self.api.get_user_link(target.id)
+        link = await self.api.get_user_link(target.id)
         
         if link:
-            # Found linked account, jump straight to results
             await interaction.response.defer()
             await process_and_send_stats(interaction, self.api, link[0], link[1])
+        elif user:
+            await interaction.response.send_message(f"[Error] {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
         else:
-            # No link found and no manual name/tag, show search UI
-            if user:
-                # User specifically asked for someone who isn't linked
-                await interaction.response.send_message(f"[Error] {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
-            else:
-                # Just show the generic search UI
-                await self._send_stat_intro(interaction)
+            await self._send_stat_intro(interaction)
 
     @commands.command(name="stat")
     async def stat_prefix(self, ctx: commands.Context) -> None:
-        """Prefix command version."""
-        await self._send_stat_intro(ctx)
+        """Prefix command version with automatic lookup."""
+        link = await self.api.get_user_link(ctx.author.id)
+        if link:
+            await process_and_send_stats(ctx, self.api, link[0], link[1])
+        else:
+            await self._send_stat_intro(ctx)
 
     async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context]) -> None:
         """Sends the initial interaction for stat lookup."""

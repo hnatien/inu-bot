@@ -1,7 +1,8 @@
 import asyncio
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
+from discord.ext import commands
 
 from utils import ValorantAPI
 
@@ -25,14 +26,23 @@ class PlayerStatsPagination(discord.ui.View):
             await interaction.response.edit_message(embed=self.p_embed, view=self)
 
 
-async def process_and_send_stats(interaction: discord.Interaction, api: ValorantAPI, name: str, tag: str) -> None:
-    """Core logic to fetch data and send the player stats embed. Shared by Modal and Slash Command."""
-    # 1. Fetch account info to resolve region
+async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str) -> None:
+    """Core logic to fetch data and send the player stats embed."""
+    
+    async def send_response(content: str = None, embed: discord.Embed = None, view: discord.ui.View = None, ephemeral: bool = False):
+        if isinstance(context, discord.Interaction):
+            if context.response.is_done():
+                await context.followup.send(content=content, embed=embed, view=view, ephemeral=ephemeral)
+            else:
+                await context.response.send_message(content=content, embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            await context.send(content=content, embed=embed, view=view)
+
     acc_data = await api.get_account_info(name, tag)
     if not acc_data or acc_data.get('status') != 200:
         error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
-        await interaction.followup.send(
-            f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
+        await send_response(
+            content=f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
             ephemeral=True
         )
         return
@@ -45,7 +55,6 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     card_wide: Optional[str] = card_dict.get('large') if isinstance(card_dict, dict) else None
     card_small: Optional[str] = card_dict.get('small') if isinstance(card_dict, dict) else None
     
-    # 2. Fetch stats and recent matches globally using resolved region
     results = await asyncio.gather(
         api.get_stats(name, tag, region=region),
         api.get_recent_matches(name, tag, region=region),
@@ -57,8 +66,8 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     
     if mmr_data.get('status') != 200:
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
-        await interaction.followup.send(
-            f"[Error] Could not find rank data for **{name}#{tag}**.\nDetails: {error_msg}\n*Ensure the player has played at least 1 recent competitive match.*", 
+        await send_response(
+            content=f"[Error] Could not find rank data for **{name}#{tag}**.\nDetails: {error_msg}\n*Ensure the player has played at least 1 recent competitive match.*", 
             ephemeral=True
         )
         return
@@ -201,7 +210,7 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     
     matches_embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url=rank_icon)
 
-    await interaction.followup.send(
+    await send_response(
         embed=profile_embed, 
         view=PlayerStatsPagination(profile_embed, matches_embed)
     )
