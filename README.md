@@ -37,7 +37,7 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 - Multi-region support with automatic shard retry
 
 ### 🌍 Multi-Language
-- Vietnamese (default) and English support
+- English (default) and Vietnamese support
 - Per-user language preference saved to database
 - Switch anytime with `/language`
 
