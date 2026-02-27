@@ -33,7 +33,7 @@ class PlayerStatsPagination(discord.ui.View):
             await interaction.response.edit_message(embed=self.p_embed, view=self)
 
 
-async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str) -> None:
+async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str, region: Optional[str] = None) -> None:
     """Core logic to fetch data and send the player stats embed."""
     
     async def send_response(content: str = None, embed: discord.Embed = None, view: discord.ui.View = None, ephemeral: bool = False):
@@ -45,31 +45,42 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         else:
             await context.send(content=content, embed=embed, view=view)
 
-    acc_data = await api.get_account_info(name, tag)
-    if not acc_data or acc_data.get('status') != 200:
-        error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
-        await send_response(
-            content=f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
-            ephemeral=True
+    if region:
+        results = await asyncio.gather(
+            api.get_account_info(name, tag),
+            api.get_stats(name, tag, region=region),
+            api.get_recent_matches(name, tag, region=region),
+            return_exceptions=True
         )
-        return
+        acc_data: Dict[str, Any] = results[0] if isinstance(results[0], dict) else {}
+        mmr_data: Dict[str, Any] = results[1] if isinstance(results[1], dict) else {}
+        matches_data: Dict[str, Any] = results[2] if isinstance(results[2], dict) else {}
+    else:
+        acc_data = await api.get_account_info(name, tag)
+        if not acc_data or acc_data.get('status') != 200:
+            error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
+            await send_response(
+                content=f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
+                ephemeral=True
+            )
+            return
         
-    acc_inner = acc_data.get('data', {})
-    region = str(acc_inner.get('region', 'na')).lower()
+        region = str(acc_data.get('data', {}).get('region', 'na')).lower()
+        
+        results = await asyncio.gather(
+            api.get_stats(name, tag, region=region),
+            api.get_recent_matches(name, tag, region=region),
+            return_exceptions=True
+        )
+        mmr_data: Dict[str, Any] = results[0] if isinstance(results[0], dict) else {}
+        matches_data: Dict[str, Any] = results[1] if isinstance(results[1], dict) else {}
+
+    acc_inner = acc_data.get('data', {}) if acc_data.get('status') == 200 else {}
     level = str(acc_inner.get('account_level', '???'))
     
     card_dict = acc_inner.get('card', {})
     card_wide: Optional[str] = card_dict.get('large') if isinstance(card_dict, dict) else None
     card_small: Optional[str] = card_dict.get('small') if isinstance(card_dict, dict) else None
-    
-    results = await asyncio.gather(
-        api.get_stats(name, tag, region=region),
-        api.get_recent_matches(name, tag, region=region),
-        return_exceptions=True
-    )
-    
-    mmr_data: Dict[str, Any] = results[0] if isinstance(results[0], dict) else {}
-    matches_data: Dict[str, Any] = results[1] if isinstance(results[1], dict) else {}
     
     if mmr_data.get('status') != 200:
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')

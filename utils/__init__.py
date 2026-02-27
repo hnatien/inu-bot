@@ -119,10 +119,10 @@ class ValorantAPI:
     def is_melee_weapon(self, weapon_type: str, skin_name: str) -> bool:
         return self.assets.is_melee_weapon(weapon_type, skin_name)
 
-    async def link_user(self, discord_id: int, name: str, tag: str) -> bool:
-        return await self.user_manager.link_user(discord_id, name, tag)
+    async def link_user(self, discord_id: int, name: str, tag: str, region: str) -> bool:
+        return await self.user_manager.link_user(discord_id, name, tag, region)
 
-    async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
+    async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str, Optional[str]]]:
         return await self.user_manager.get_user_link(discord_id)
 
     async def unlink_user(self, discord_id: int) -> bool:

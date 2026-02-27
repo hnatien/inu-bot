@@ -26,8 +26,9 @@ class StatsCog(commands.Cog):
             
         real_name = acc_data['data']['name']
         real_tag = acc_data['data']['tag']
+        real_region = str(acc_data['data'].get('region', 'ap')).lower()
         
-        success = await self.api.link_user(interaction.user.id, real_name, real_tag)
+        success = await self.api.link_user(interaction.user.id, real_name, real_tag, real_region)
         if success:
             await interaction.followup.send(f"[Success] Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
         else:
@@ -63,7 +64,7 @@ class StatsCog(commands.Cog):
         
         if link:
             await interaction.response.defer()
-            await process_and_send_stats(interaction, self.api, link[0], link[1])
+            await process_and_send_stats(interaction, self.api, link[0], link[1], region=link[2])
         elif user:
             await interaction.response.send_message(f"[Error] {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
         else:
@@ -74,7 +75,7 @@ class StatsCog(commands.Cog):
         """Prefix command version with automatic lookup."""
         link = await self.api.get_user_link(ctx.author.id)
         if link:
-            await process_and_send_stats(ctx, self.api, link[0], link[1])
+            await process_and_send_stats(ctx, self.api, link[0], link[1], region=link[2])
         else:
             await self._send_stat_intro(ctx)
 
