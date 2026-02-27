@@ -87,7 +87,7 @@ class StatsCog(commands.Cog):
         else:
             await self._send_stat_intro(ctx, lang=lang)
 
-    async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context], lang: str = "vi") -> None:
+    async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context], lang: str = "en") -> None:
         """Sends the initial interaction for stat lookup."""
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         view = StatView(self.api, user_id, lang=lang)

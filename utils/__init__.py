@@ -51,7 +51,7 @@ class ValorantAPI:
     def get_auth_link(self) -> str:
         return self.auth.get_auth_link()
 
-    async def auth_with_url(self, url: str, lang: str = "vi") -> Tuple[bool, str, Optional[AuthResult]]:
+    async def auth_with_url(self, url: str, lang: str = "en") -> Tuple[bool, str, Optional[AuthResult]]:
         if not self.session:
             await self.init_session()
         return await self.auth.auth_with_url(url, self.session, lang=lang)

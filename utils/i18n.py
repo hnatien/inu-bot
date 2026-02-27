@@ -1,6 +1,6 @@
 from typing import Any, Dict, Union
 
-DEFAULT_LANG = "vi"
+DEFAULT_LANG = "en"
 
 STRINGS: Dict[str, Dict[str, str]] = {
     "error_cooldown": {

@@ -37,7 +37,7 @@ class ValorantBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info(f'Logged in as {self.user.name if self.user else "Unknown User"}')
-        await self.change_presence(activity=discord.Game(name="/help | /language en for English!"))
+        await self.change_presence(activity=discord.Game(name="/help | /language vi cho Tiếng Việt!"))
 
     async def close(self) -> None:
         await self.v_api.close()
@@ -48,7 +48,7 @@ bot = ValorantBot()
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     """Centralized error handler for slash commands"""
-    lang = "vi"
+    lang = "en"
     try:
         lang = await bot.v_api.get_language(interaction.user.id)
     except Exception:

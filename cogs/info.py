@@ -42,7 +42,7 @@ SUPPORTED_LANGS = [
 class HelpView(discord.ui.View):
     """Paginated help menu with category buttons."""
 
-    def __init__(self, lang: str = "vi") -> None:
+    def __init__(self, lang: str = "en") -> None:
         super().__init__(timeout=120)
         self.lang = lang
 
@@ -77,7 +77,7 @@ class HelpView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
 
-def _build_help_embed(lang: str = "vi") -> discord.Embed:
+def _build_help_embed(lang: str = "en") -> discord.Embed:
     embed = discord.Embed(
         title=t("help_title", lang),
         description=t("help_desc", lang),
@@ -87,7 +87,7 @@ def _build_help_embed(lang: str = "vi") -> discord.Embed:
     return embed
 
 
-def _build_update_embed(lang: str = "vi") -> discord.Embed:
+def _build_update_embed(lang: str = "en") -> discord.Embed:
     entries = CHANGELOG[:MAX_CHANGELOG_ENTRIES]
     description_parts: list[str] = []
 
