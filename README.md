@@ -7,7 +7,7 @@
 
 # 🐕 Inu Bot
 
-A feature-rich Discord bot for tracking Valorant player statistics, daily shop rotations, and Night Market deals — powered by HenrikDev API and Riot Games OAuth2.
+A feature-rich Discord bot for tracking Valorant player statistics, daily shop rotations, player inventory, and Night Market deals — powered by HenrikDev API and Riot Games OAuth2.
 
 ---
 
