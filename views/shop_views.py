@@ -106,10 +106,9 @@ class ShopModal(discord.ui.Modal):
             await interaction.followup.send(embeds=embeds)
 
     def _format_duration(self, seconds: int) -> str:
-        days = seconds // 86400
-        hours = (seconds % 86400) // 3600
+        hours = seconds // 3600
         minutes = (seconds % 3600) // 60
-        return f"{days}d {hours}h {minutes}m" if days > 0 else f"{hours}h {minutes}m"
+        return f"{hours}h {minutes}m"
 
     def _create_skin_embed(self, details: Dict[str, Any], discount: int, offer_id: str) -> discord.Embed:
         name = details.get('name') or details.get('displayName') or 'Unknown Skin'
@@ -123,9 +122,8 @@ class ShopModal(discord.ui.Modal):
 
         rarity_info = self.api.get_rarity_info(rarity_uuid)
 
-        # Ký tự khoảng trống braille để ép các embed cùng độ rộng
-        spacer = "\u2800" * 30
-        embed = discord.Embed(title=name, description=spacer, color=rarity_info['color'])
+        desc = f"**🔥 Giảm giá: {discount}%**" if discount > 0 else ""
+        embed = discord.Embed(title=name, description=desc, color=rarity_info['color'])
         if icon:
             embed.set_thumbnail(url=icon)
 
