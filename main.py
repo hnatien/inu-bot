@@ -37,7 +37,7 @@ class ValorantBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info(f'Logged in as {self.user.name if self.user else "Unknown User"}')
-        await self.change_presence(activity=discord.Game(name="/stat | /shop"))
+        await self.change_presence(activity=discord.Game(name="/help | /language en for English!"))
 
     async def close(self) -> None:
         await self.v_api.close()
