@@ -6,11 +6,29 @@ from typing import Union, List
 from utils import ValorantAPI
 from utils.i18n import t
 
-BOT_VERSION = "1.0.0"
+BOT_VERSION = "1.1.0"
 
 EMBED_COLOR = 0xfa4454
 
 CHANGELOG: List[dict] = [
+    {
+        "version": "1.1.0",
+        "date": "2026-02-27",
+        "changes_vi": [
+            "Thêm tính năng Inventory: Xem kho đồ skin súng",
+            "Hỗ trợ lọc theo loại súng (Vandal, Phantom, v.v.)",
+            "Sửa lỗi ảnh skin bị zoom/crop (Prime, Sovereign...)",
+            "Tự động gộp skin level và chroma để kho đồ gọn gàng hơn",
+            "Hệ thống Multi-Region retry (tự động thử các vùng AP, NA, EU, KR)",
+        ],
+        "changes_en": [
+            "Added Inventory feature: Browse your weapon skins",
+            "Support filtering by weapon type (Vandal, Phantom, etc.)",
+            "Fixed skin image crops/zooms (Prime, Sovereign, etc.)",
+            "Auto-deduplicate skin levels and chromas for a cleaner list",
+            "Multi-Region retry system (automatically tries AP, NA, EU, KR)",
+        ],
+    },
     {
         "version": "1.0.0",
         "date": "2026-02-27",
@@ -61,6 +79,16 @@ class HelpView(discord.ui.View):
         embed = discord.Embed(
             title=t("help_shop_title", self.lang),
             description=t("help_shop_desc", self.lang),
+            color=EMBED_COLOR,
+        )
+        embed.set_footer(text="Inu Bot")
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Inventory", style=discord.ButtonStyle.primary)
+    async def inventory_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        embed = discord.Embed(
+            title=t("help_inv_title", self.lang),
+            description=t("help_inv_desc", self.lang),
             color=EMBED_COLOR,
         )
         embed.set_footer(text="Inu Bot")

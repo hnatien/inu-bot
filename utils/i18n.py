@@ -227,21 +227,23 @@ STRINGS: Dict[str, Dict[str, str]] = {
     "help_desc": {
         "vi": (
             "Inu Bot giúp bạn tra cứu stat Valorant, "
-            "xem Daily Shop và Night Market.\n\n"
+            "xem Daily Shop, Night Market và Inventory.\n\n"
             "Chọn một mục bên dưới để xem chi tiết.\n\n"
             "```\n"
             "Stat        Rank, RR, lịch sử trận đấu\n"
             "Shop        Cửa hàng, Night Market\n"
+            "Inventory   Kho đồ skin súng của bạn\n"
             "Misc        Prefix, hỗ trợ, cập nhật\n"
             "```"
         ),
         "en": (
             "Inu Bot helps you look up Valorant stats, "
-            "view your Daily Shop and Night Market.\n\n"
+            "view your Daily Shop, Night Market and Inventory.\n\n"
             "Select a category below for details.\n\n"
             "```\n"
             "Stat        Rank, RR, match history lookup\n"
             "Shop        Daily shop, night market viewer\n"
+            "Inventory   Your gun skins collection\n"
             "Misc        Prefix, support, updates\n"
             "```"
         ),
@@ -314,6 +316,36 @@ STRINGS: Dict[str, Dict[str, str]] = {
             "4. Copy the entire redirect URL\n"
             "5. Paste the link into the modal\n\n"
             "Tokens are used once and never stored."
+        ),
+    },
+    "help_inv_title": {
+        "vi": "HƯỚNG DẪN — INVENTORY",
+        "en": "GUIDE — INVENTORY",
+    },
+    "help_inv_desc": {
+        "vi": (
+            "Xem kho đồ skin súng bạn đang sở hữu.\n\n"
+            "```\n"
+            "/inventory         Xem kho đồ skin\n"
+            "```\n\n"
+            "**Tính năng**\n"
+            "- Hiển thị danh sách skin súng của bạn\n"
+            "- Có menu lọc theo loại súng (Vandal, Phantom, v.v.)\n"
+            "- Hiển thị hình ảnh, tên và độ hiếm skin\n\n"
+            "**Cách dùng**\n"
+            "Tương tự như `/shop`, bạn cần đăng nhập Riot để bot lấy dữ liệu (Access Token chỉ dùng 1 lần)."
+        ),
+        "en": (
+            "View your collection of owned weapon skins.\n\n"
+            "```\n"
+            "/inventory         View skin inventory\n"
+            "```\n\n"
+            "**Features**\n"
+            "- List your owned weapon skins\n"
+            "- Filter by weapon type (Vandal, Phantom, etc.)\n"
+            "- Shows skin image, name, and rarity\n\n"
+            "**How to use**\n"
+            "Similar to `/shop`, you need to sign in to Riot (Access Token is one-time use)."
         ),
     },
     "help_misc_title": {
