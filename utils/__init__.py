@@ -46,6 +46,7 @@ class ValorantAPI:
     async def close(self) -> None:
         if self.session:
             await self.session.close()
+            self.session = None
 
     def get_auth_link(self) -> str:
         return self.auth.get_auth_link()
@@ -70,11 +71,12 @@ class ValorantAPI:
             await self.init_session()
         return await self.henrik.get_recent_matches(name, tag, self.session, region=region)
 
-    async def get_shop(self, auth: AuthResult) -> Optional[Dict[str, Any]]:
+    async def get_shop(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Fetch user's daily shop storefront"""
         if not self.session:
             return None
-        url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
+        target_region = region or self.region
+        url = f"https://pd.{target_region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
         try:
             async with self.session.post(url, headers=auth.headers, json={}) as resp:
                 if resp.status == 200:
@@ -86,11 +88,12 @@ class ValorantAPI:
             logger.error(f"Failed to get shop: {e}")
         return None
 
-    async def get_nightmarket(self, auth: AuthResult) -> Optional[Dict[str, Any]]:
+    async def get_nightmarket(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Fetch user's Night Market (BonusStore)"""
         if not self.session:
             return None
-        url = f"https://pd.{self.region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
+        target_region = region or self.region
+        url = f"https://pd.{target_region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
         try:
             async with self.session.post(url, headers=auth.headers, json={}) as resp:
                 if resp.status == 200:
@@ -116,8 +119,8 @@ class ValorantAPI:
     def is_melee_weapon(self, weapon_type: str, skin_name: str) -> bool:
         return self.assets.is_melee_weapon(weapon_type, skin_name)
 
-    async def link_user(self, discord_id: int, name: str, tag: str) -> None:
-        await self.user_manager.link_user(discord_id, name, tag)
+    async def link_user(self, discord_id: int, name: str, tag: str) -> bool:
+        return await self.user_manager.link_user(discord_id, name, tag)
 
     async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
         return await self.user_manager.get_user_link(discord_id)

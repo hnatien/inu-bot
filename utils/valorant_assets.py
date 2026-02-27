@@ -98,7 +98,14 @@ class ValorantAssets:
             async with session.get(url) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    return data.get('data')
+                    raw = data.get('data')
+                    if raw:
+                        return {
+                            'name': raw.get('displayName', 'Unknown Skin'),
+                            'icon': raw.get('displayIcon'),
+                            'rarity': raw.get('contentTierUuid'),
+                            'weapon': raw.get('weapon', '')
+                        }
         except Exception as e:
             logger.error(f"Failed to get skin details for {level_uuid}: {e}")
         return None

@@ -8,11 +8,18 @@ from utils import ValorantAPI
 
 
 class PlayerStatsPagination(discord.ui.View):
-    def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed) -> None:
+    def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed, owner_id: int) -> None:
         super().__init__(timeout=120)
         self.p_embed = p_embed
         self.m_embed = m_embed
         self.current = 0
+        self.owner_id = owner_id
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("Bạn không thể sử dụng nút này.", ephemeral=True)
+            return False
+        return True
 
     @discord.ui.button(label="MATCH HISTORY", style=discord.ButtonStyle.primary)
     async def navigate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
@@ -210,9 +217,11 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     
     matches_embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url=rank_icon)
 
+    owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
+
     await send_response(
         embed=profile_embed, 
-        view=PlayerStatsPagination(profile_embed, matches_embed)
+        view=PlayerStatsPagination(profile_embed, matches_embed, owner_id)
     )
 
 
@@ -250,10 +259,17 @@ class StatModal(discord.ui.Modal, title='VALORANT STATS LOOKUP'):
 
 
 class StatView(discord.ui.View):
-    def __init__(self, api: ValorantAPI) -> None:
+    def __init__(self, api: ValorantAPI, owner_id: int) -> None:
         super().__init__(timeout=300)
         self.api = api
+        self.owner_id = owner_id
 
-    @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger, custom_id="stat_lookup_btn")
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("Bạn không thể sử dụng nút này.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger)
     async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         await interaction.response.send_modal(StatModal(self.api))

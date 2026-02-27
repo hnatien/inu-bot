@@ -1,10 +1,14 @@
+import logging
+from typing import Dict, Any, Union
+
 import discord
 from discord.ext import commands
-from typing import Dict, Any, Union
 
 from utils import ValorantAPI
 from utils.riot_auth import AuthResult
 from utils.constants import VP_ICON_URL
+
+logger = logging.getLogger('ShopViews')
 
 
 class ShopModal(discord.ui.Modal):
@@ -23,6 +27,12 @@ class ShopModal(discord.ui.Modal):
         min_length=50
     )
 
+    async def _resolve_region(self, auth: AuthResult) -> str:
+        acc_data = await self.api.get_account_info(auth.game_name, auth.tag_line)
+        if acc_data and acc_data.get('status') == 200:
+            return str(acc_data.get('data', {}).get('region', '')).lower() or self.api.region
+        return self.api.region
+
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
 
@@ -31,13 +41,15 @@ class ShopModal(discord.ui.Modal):
             await interaction.followup.send(f"[Error] {message}")
             return
 
-        if self.mode == "shop":
-            await self._handle_shop(interaction, auth)
-        else:
-            await self._handle_nightmarket(interaction, auth)
+        region = await self._resolve_region(auth)
 
-    async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult) -> None:
-        data = await self.api.get_shop(auth)
+        if self.mode == "shop":
+            await self._handle_shop(interaction, auth, region)
+        else:
+            await self._handle_nightmarket(interaction, auth, region)
+
+    async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
+        data = await self.api.get_shop(auth, region=region)
         if not data:
             await interaction.followup.send("[Error] Không lấy được dữ liệu Daily Shop từ Riot.")
             return
@@ -67,8 +79,8 @@ class ShopModal(discord.ui.Modal):
         else:
             await interaction.followup.send(embeds=embeds)
 
-    async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult) -> None:
-        data = await self.api.get_nightmarket(auth)
+    async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
+        data = await self.api.get_nightmarket(auth, region=region)
         if not data:
             await interaction.followup.send("[Error] Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
             return
@@ -141,13 +153,19 @@ class ShopView(discord.ui.View):
         self.api = api
         self.context = context
         self.mode = mode
+        self.owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         
         self.add_item(discord.ui.Button(label="1. Đăng nhập Riot", style=discord.ButtonStyle.link, url=auth_url))
         
-        self.auth_btn = discord.ui.Button(label="2. Dán Link vào đây", style=discord.ButtonStyle.success, custom_id="shop_auth_btn")
+        self.auth_btn = discord.ui.Button(label="2. Dán Link vào đây", style=discord.ButtonStyle.success)
         self.auth_btn.callback = self.open_shop_modal
         self.add_item(self.auth_btn)
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("Bạn không thể sử dụng nút này.", ephemeral=True)
+            return False
+        return True
+
     async def open_shop_modal(self, interaction: discord.Interaction) -> None:
         await interaction.response.send_modal(ShopModal(self.api, self.context, mode=self.mode))
-

@@ -54,14 +54,12 @@ class HenrikAPI:
 
     async def get_account_info(self, name: str, tag: str, session: aiohttp.ClientSession) -> Optional[Dict[str, Any]]:
         """Get general account info (v1)"""
-        import urllib.parse
         safe_name = urllib.parse.quote(name)
         safe_tag = urllib.parse.quote(tag)
         return await self._request(f"v1/account/{safe_name}/{safe_tag}", session)
 
     async def get_recent_matches(self, name: str, tag: str, session: aiohttp.ClientSession, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get history of recent matches (v3)"""
-        import urllib.parse
         safe_name = urllib.parse.quote(name)
         safe_tag = urllib.parse.quote(tag)
         target_region = region if region else self.region

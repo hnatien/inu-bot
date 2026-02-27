@@ -30,7 +30,7 @@ class HelpView(discord.ui.View):
     def __init__(self) -> None:
         super().__init__(timeout=120)
 
-    @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary, custom_id="help_stats")
+    @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary)
     async def stats_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title="HƯỚNG DẪN — STAT",
@@ -53,7 +53,7 @@ class HelpView(discord.ui.View):
         embed.set_footer(text="Inu Bot")
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Shop", style=discord.ButtonStyle.primary, custom_id="help_shop")
+    @discord.ui.button(label="Shop", style=discord.ButtonStyle.primary)
     async def shop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title="HƯỚNG DẪN — SHOP",
@@ -77,7 +77,7 @@ class HelpView(discord.ui.View):
         embed.set_footer(text="Inu Bot")
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Misc", style=discord.ButtonStyle.secondary, custom_id="help_misc")
+    @discord.ui.button(label="Misc", style=discord.ButtonStyle.secondary)
     async def misc_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title="HƯỚNG DẪN — MISC",

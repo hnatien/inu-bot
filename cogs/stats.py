@@ -27,8 +27,11 @@ class StatsCog(commands.Cog):
         real_name = acc_data['data']['name']
         real_tag = acc_data['data']['tag']
         
-        await self.api.link_user(interaction.user.id, real_name, real_tag)
-        await interaction.followup.send(f"[Success] Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
+        success = await self.api.link_user(interaction.user.id, real_name, real_tag)
+        if success:
+            await interaction.followup.send(f"[Success] Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
+        else:
+            await interaction.followup.send("[Error] Failed to save account link. Please try again later.", ephemeral=True)
 
     @app_commands.command(name="unlink", description="Unlink your Valorant account from Discord")
     async def unlink(self, interaction: discord.Interaction) -> None:
@@ -77,7 +80,7 @@ class StatsCog(commands.Cog):
 
     async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context]) -> None:
         """Sends the initial interaction for stat lookup."""
-        view = StatView(self.api)
+        view = StatView(self.api, context.user.id if isinstance(context, discord.Interaction) else context.author.id)
         embed = discord.Embed(
             title="VALORANT TRACKER",
             description=(

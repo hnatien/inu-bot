@@ -28,16 +28,17 @@ class UserManager:
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
 
-    async def link_user(self, discord_id: int, name: str, tag: str) -> None:
+    async def link_user(self, discord_id: int, name: str, tag: str) -> bool:
         """Link a Discord ID to a Riot ID in MongoDB."""
         if self.collection is None:
-            return
+            return False
 
         await self.collection.update_one(
             {"discord_id": str(discord_id)},
             {"$set": {"name": name, "tag": tag}},
             upsert=True
         )
+        return True
 
     async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str]]:
         """Get the Riot ID and Tag for a Discord ID from MongoDB."""
