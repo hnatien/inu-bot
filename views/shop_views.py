@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Dict, Any, Union
 
@@ -69,8 +70,9 @@ class ShopModal(discord.ui.Modal):
         header.set_footer(text="Thực hiện bởi Inu Bot", icon_url=interaction.user.display_avatar.url)
         embeds = [header]
 
-        for offer_id in offers:
-            details = await self.api.get_skin_details(offer_id)
+        tasks = [self.api.get_skin_details(oid) for oid in offers]
+        results = await asyncio.gather(*tasks)
+        for offer_id, details in zip(offers, results):
             if details:
                 embeds.append(self._create_skin_embed(details, 0, offer_id))
 
@@ -97,18 +99,19 @@ class ShopModal(discord.ui.Modal):
         header.set_footer(text="Thực hiện bởi Inu Bot", icon_url=interaction.user.display_avatar.url)
         embeds = [header]
 
+        offer_items = []
         for item in offers:
             offer_id = item.get('OfferID') or item.get('Offer', {}).get('OfferID')
             if not offer_id:
                 rewards = item.get('Offer', {}).get('Rewards', [])
                 if rewards:
                     offer_id = rewards[0].get('ItemID')
+            if offer_id:
+                offer_items.append((offer_id, item.get('DiscountPercent', 0)))
 
-            if not offer_id:
-                continue
-
-            discount = item.get('DiscountPercent', 0)
-            details = await self.api.get_skin_details(offer_id)
+        tasks = [self.api.get_skin_details(oid) for oid, _ in offer_items]
+        results = await asyncio.gather(*tasks)
+        for (offer_id, discount), details in zip(offer_items, results):
             if details:
                 embeds.append(self._create_skin_embed(details, discount, offer_id))
 

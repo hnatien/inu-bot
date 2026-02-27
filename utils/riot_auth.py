@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+import time
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
 
@@ -29,6 +30,19 @@ class RiotAuth:
         'referer': "https://github.com/giorgi-o/SkinPeek"
     }
 
+    CLIENT_PLATFORM: str = base64.b64encode(json.dumps({
+        "platformType": "PC",
+        "platformOS": "Windows",
+        "platformOSVersion": "10.0.19042.1.256.64bit",
+        "platformChipset": "Unknown"
+    }).encode()).decode()
+
+    VERSION_CACHE_TTL: int = 3600
+
+    def __init__(self) -> None:
+        self._cached_version: Optional[str] = None
+        self._version_fetched_at: float = 0.0
+
     @staticmethod
     def get_auth_link() -> str:
         return (
@@ -39,26 +53,20 @@ class RiotAuth:
             "&scope=account%20openid"
         )
 
-    @staticmethod
-    def _get_riot_client_platform() -> str:
-        data = {
-            "platformType": "PC",
-            "platformOS": "Windows",
-            "platformOSVersion": "10.0.19042.1.256.64bit",
-            "platformChipset": "Unknown"
-        }
-        return base64.b64encode(json.dumps(data).encode()).decode()
-
-    @staticmethod
-    async def _get_client_version(session: aiohttp.ClientSession) -> str:
+    async def _get_client_version(self, session: aiohttp.ClientSession) -> str:
+        now = time.time()
+        if self._cached_version and (now - self._version_fetched_at) < self.VERSION_CACHE_TTL:
+            return self._cached_version
         async with session.get("https://valorant-api.com/v1/version") as resp:
             data = await resp.json()
-            return data['data']['riotClientVersion']
+            self._cached_version = data['data']['riotClientVersion']
+            self._version_fetched_at = now
+            return self._cached_version
 
     async def auth_with_url(self, url: str, session: aiohttp.ClientSession) -> Tuple[bool, str, Optional[AuthResult]]:
         """Authenticate using the redirect URL. Returns per-request AuthResult to avoid race conditions."""
         headers = dict(self.BASE_HEADERS)
-        headers['X-Riot-ClientPlatform'] = self._get_riot_client_platform()
+        headers['X-Riot-ClientPlatform'] = self.CLIENT_PLATFORM
 
         try:
             version = await self._get_client_version(session)

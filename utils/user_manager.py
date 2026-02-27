@@ -24,6 +24,7 @@ class UserManager:
             self.client = AsyncIOMotorClient(self.uri)
             self.db = self.client.get_database("inu_bot")
             self.collection = self.db.users
+            await self.collection.create_index("discord_id", unique=True)
             logger.info("Successfully connected to MongoDB.")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
