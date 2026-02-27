@@ -2,32 +2,32 @@
 trigger: always_on
 ---
 
-# PYTHON DISCORD BOT DEVELOPMENT STANDARDS
+# PROJECT RULES
 
-## 1. STRUCTURE
-- Use Cogs for modularity.
-- Root: `main.py`, `.env`, `.gitignore`.
-- Directories: `/cogs`, `/utils`, `/assets`.
-- Logic: Separate API wrappers from command definitions.
+## GENERAL
+- Do not add comments to the code unless it is to explain "why" behind a complex logic.
+- Do not remove or modify existing functionality unless explicitly asked.
+- Do not install new dependencies without asking first.
+- Always read the relevant file before editing it.
+- Keep changes minimal. Do not refactor unrelated code.
 
-## 2. ASYNC & I/O
-- Forbidden: `requests`, `time.sleep`, `open()` (synchronous).
-- Required: `aiohttp`, `asyncio.sleep()`, `aiofiles`.
-- Implement `interaction.response.defer()` for tasks > 2s.
+## CODE QUALITY
+- Follow existing code style and patterns in the project.
+- All code must be production-ready. No TODOs, no placeholders, no half-done logic.
+- Do not use magic numbers. Use named constants.
+- Use type hints for all function parameters and return values.
+- Keep functions small and focused — one function, one job.
 
-## 3. UI/UX (VALORANT STYLE)
-- Use `discord.app_commands` (Slash Commands).
-- Display: `discord.Embed` + `discord.ui.View`.
-- Formatting: Monospace code blocks for alignment.
-- Interaction: Use Buttons/Select Menus for navigation.
+## ERROR HANDLING
+- Never use bare `except`. Always catch specific exceptions.
+- Never silently swallow errors. Always log or re-raise.
+- Handle edge cases. Do not assume happy path.
 
-## 4. CODE QUALITY
-- Follow PEP 8 (naming, spacing).
-- Mandatory Type Hinting for all parameters and returns.
-- Minimal comments: Code must be self-explanatory.
-- Centralized error handling via `on_app_command_error`.
+## SECURITY
+- Never hardcode secrets, tokens, or API keys.
+- Never log sensitive data.
 
-## 5. SECURITY
-- Zero hardcoded secrets; use `os.getenv`.
-- Encrypt sensitive user data at rest.
-- Strict adherence to Riot/Discord rate limits.
+## COMMUNICATION
+- If something is unclear, ask before coding.
+- If a request would break existing functionality, warn first.
+- Explain what you changed and why after each edit.
