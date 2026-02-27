@@ -9,7 +9,7 @@ from utils.riot_auth import RiotAuth, AuthResult
 from utils.henrik_api import HenrikAPI
 from utils.valorant_assets import ValorantAssets
 from utils.user_manager import UserManager
-from utils.constants import RANK_TIERS, RANK_ICON_BASE, DEFAULT_RANK_ICON
+from utils.constants import RANK_TIERS, RANK_ICON_BASE, DEFAULT_RANK_ICON, ITEM_TYPE_IDS
 
 logger = logging.getLogger('ValorantAPI')
 
@@ -104,6 +104,51 @@ class ValorantAPI:
         except Exception as e:
             logger.error(f"Failed to get Night Market: {e}")
         return None
+
+    async def get_inventory(self, auth: AuthResult, item_type: str, region: Optional[str] = None) -> list:
+        """Fetch player-owned items by category from the entitlements endpoint."""
+        if not self.session:
+            return []
+        type_id = ITEM_TYPE_IDS.get(item_type)
+        if not type_id:
+            logger.error(f"Unknown item type: {item_type}")
+            return []
+
+        # Shard mapping for official Riot endpoints
+        target_region = (region or self.region).lower()
+        shard = target_region
+        if target_region in ["latam", "br"]:
+            shard = "na"
+
+        url = f"https://pd.{shard}.a.pvp.net/store/v1/entitlements/{auth.puuid}/{type_id}"
+        logger.info(f"Fetching inventory from: {url}")
+        
+        try:
+            async with self.session.get(url, headers=auth.headers) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Riot dynamic response structure:
+                    # 1. Direct 'Entitlements' list (when ItemTypeID is in URL)
+                    # 2. 'EntitlementsByTypes' (fallback or unfiltered)
+                    items_raw = data.get("Entitlements", [])
+                    if not items_raw:
+                        ebt = data.get("EntitlementsByTypes", [])
+                        if ebt:
+                            items_raw = ebt[0].get("Entitlements", [])
+                    
+                    if items_raw:
+                        items = [e["ItemID"] for e in items_raw]
+                        logger.info(f"Successfully fetched {len(items)} items for {item_type}")
+                        return items
+                        
+                    return []
+                
+                error_text = await resp.text()
+                logger.error(f"Inventory API Error {resp.status} for {url}: {error_text}")
+        except Exception as e:
+            logger.error(f"Failed to get inventory ({item_type}) at {url}: {e}")
+        return []
 
     async def get_skin_details(self, level_uuid: str) -> Optional[Dict[str, Any]]:
         if not self.session:

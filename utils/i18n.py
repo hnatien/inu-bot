@@ -360,6 +360,83 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "vi": "Đã chuyển sang **Tiếng Việt** 🇻🇳",
         "en": "Switched to **English** 🇬🇧",
     },
+
+    "inv_intro": {
+        "vi": (
+            "Làm theo các bước sau để xem **Inventory** nhé:\n\n"
+            "> **1.** Nhấn nút **`1. Đăng nhập Riot`** bên dưới.\n"
+            "> **2.** Đăng nhập tài khoản Riot Games.\n"
+            "> **3.** Chờ trang web chuyển hướng (có thể hiện trang trắng).\n"
+            "> **4.** **Copy toàn bộ URL** trên thanh địa chỉ.\n"
+            "> **5.** Quay lại đây, nhấn **`2. Dán Link vào đây`** và gửi link.\n\n"
+            "*Dùng `/safety` để tìm hiểu về bảo mật tài khoản.*"
+        ),
+        "en": (
+            "Please follow these steps to view your **Inventory**:\n\n"
+            "> **1.** Click the **`1. Sign in to Riot`** button below.\n"
+            "> **2.** Sign in to your Riot Games account.\n"
+            "> **3.** Wait for the page to redirect (it may show a blank page or an error).\n"
+            "> **4.** **Copy the entire URL** from the address bar.\n"
+            "> **5.** Come back here, click **`2. Paste Link Here`** and submit the link.\n\n"
+            "*Use `/safety` to learn more about account security.*"
+        ),
+    },
+    "inv_modal_title": {
+        "vi": "Xác thực Inventory",
+        "en": "INVENTORY Authentication",
+    },
+    "inv_header": {
+        "vi": "> **Tài khoản:** `{account}`\n> **Danh mục:** `{category}`\n> **Tổng:** `{total}` item",
+        "en": "> **Account:** `{account}`\n> **Category:** `{category}`\n> **Total:** `{total}` item(s)",
+    },
+    "inv_no_items": {
+        "vi": "Không tìm thấy item nào trong danh mục này.",
+        "en": "No items found in this category.",
+    },
+    "inv_error_no_data": {
+        "vi": "Không lấy được dữ liệu Inventory từ Riot.",
+        "en": "Could not retrieve Inventory data from Riot.",
+    },
+    "inv_page": {
+        "vi": "Trang {current}/{total}",
+        "en": "Page {current}/{total}",
+    },
+    "inv_cat_skins": {
+        "vi": "Skins",
+        "en": "Skins",
+    },
+    "inv_cat_agents": {
+        "vi": "Agents",
+        "en": "Agents",
+    },
+    "inv_cat_buddies": {
+        "vi": "Buddies",
+        "en": "Buddies",
+    },
+    "inv_cat_cards": {
+        "vi": "Cards",
+        "en": "Cards",
+    },
+    "inv_cat_sprays": {
+        "vi": "Sprays",
+        "en": "Sprays",
+    },
+    "inv_cat_titles": {
+        "vi": "Titles",
+        "en": "Titles",
+    },
+    "inv_loading": {
+        "vi": "Đang tải inventory...",
+        "en": "Loading inventory...",
+    },
+    "inv_all_weapons": {
+        "vi": "Tất cả vũ khí",
+        "en": "All Weapons",
+    },
+    "inv_weapon_placeholder": {
+        "vi": "Lọc theo vũ khí...",
+        "en": "Filter by weapon...",
+    },
 }
 
 

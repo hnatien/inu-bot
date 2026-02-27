@@ -5,6 +5,7 @@ from typing import Dict, Optional, Any
 
 import aiohttp
 import aiofiles
+import asyncio
 
 from utils.constants import RARITY_DATA, MELEE_KEYWORDS
 
@@ -51,31 +52,56 @@ class ValorantAssets:
     async def fetch_all_data(self, session: aiohttp.ClientSession) -> None:
         """Prefetch weapon skins and rarity metadata for faster lookups"""
         try:
-            async with session.get("https://valorant-api.com/v1/weapons?language=en-US") as resp:
-                data = await resp.json()
-                if data.get('status') == 200:
-                    for weapon in data.get('data', []):
+            endpoints = {
+                "weapons": "https://valorant-api.com/v1/weapons?language=en-US",
+                "tiers": "https://valorant-api.com/v1/contenttiers"
+            }
+
+            async def fetch(name, url):
+                try:
+                    async with session.get(url) as resp:
+                        if resp.status == 200:
+                            return name, await resp.json()
+                except Exception as e:
+                    logger.error(f"Failed to fetch {name} from {url}: {e}")
+                return name, None
+
+            tasks = [fetch(name, url) for name, url in endpoints.items()]
+            results = await asyncio.gather(*tasks)
+
+            for name, data in results:
+                if not data or data.get('status') != 200:
+                    continue
+                raw = data.get('data', [])
+
+                if name == "weapons":
+                    for weapon in raw:
+                        weapon_name = weapon.get('displayName', '')
                         for skin in weapon.get('skins', []):
+                            skin_name = skin.get('displayName', 'Unknown Skin')
+                            rarity_uuid = skin.get('contentTierUuid')
+                            skin_icon = skin.get('displayIcon') or skin.get('fullRender')
+                            
                             skin_data = {
-                                'name': skin['displayName'],
-                                'icon': skin.get('displayIcon'),
-                                'rarity': skin.get('contentTierUuid'),
-                                'weapon': weapon['displayName']
+                                'name': skin_name,
+                                'icon': skin_icon,
+                                'rarity': rarity_uuid,
+                                'weapon': weapon_name
                             }
                             self.skin_map[skin['uuid']] = skin_data
-
                             for level in skin.get('levels', []):
-                                self.skin_map[level['uuid']] = {
-                                    'name': skin['displayName'],
-                                    'icon': level.get('displayIcon') or skin.get('displayIcon'),
-                                    'rarity': skin.get('contentTierUuid'),
-                                    'weapon': weapon['displayName']
-                                }
-
-            async with session.get("https://valorant-api.com/v1/contenttiers") as resp:
-                data = await resp.json()
-                if data.get('status') == 200:
-                    for tier in data.get('data', []):
+                                if level['uuid'] not in self.skin_map:
+                                    self.skin_map[level['uuid']] = skin_data
+                            for chroma in skin.get('chromas', []):
+                                if chroma['uuid'] not in self.skin_map:
+                                    self.skin_map[chroma['uuid']] = {
+                                        'name': chroma.get('displayName') or skin_name,
+                                        'icon': chroma.get('displayIcon') or skin_icon,
+                                        'rarity': rarity_uuid,
+                                        'weapon': weapon_name
+                                    }
+                elif name == "tiers":
+                    for tier in raw:
                         self.rarity_map[tier['uuid']] = {
                             'name': tier['devName'],
                             'icon': tier['displayIcon']

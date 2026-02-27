@@ -23,6 +23,7 @@ class ValorantBot(commands.Bot):
         """Initialize cogs and API session"""
         await self.load_extension('cogs.stats')
         await self.load_extension('cogs.shop')
+        await self.load_extension('cogs.inventory')
         await self.load_extension('cogs.info')
         
         await self.v_api.init_session()

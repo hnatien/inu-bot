@@ -29,6 +29,13 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 - Night Market deals with discount percentages
 - Skin rarity and pricing information
 
+### 🎒 Skin Inventory
+- Browse all owned weapon skins
+- Filter by weapon type (Vandal, Phantom, Melee, etc.)
+- Paginated display with rarity colors and icons
+- Automatic deduplication of skin levels and chromas
+- Multi-region support with automatic shard retry
+
 ### 🌍 Multi-Language
 - Vietnamese (default) and English support
 - Per-user language preference saved to database
@@ -115,6 +122,7 @@ python main.py
 | `/unlink` | Remove your linked account |
 | `/shop` | View your daily shop (requires auth) |
 | `/nightmarket` | View Night Market deals (requires auth) |
+| `/inventory` | Browse your owned weapon skins (requires auth) |
 | `/safety` | Explains the authentication security model |
 | `/language` | Switch language between Vietnamese and English |
 | `/help` | Usage guide with category navigation |
@@ -126,7 +134,7 @@ python main.py
 
 ## 🔐 Authentication
 
-For `/shop` and `/nightmarket`, the bot uses Riot's official OAuth2 flow:
+For `/shop`, `/nightmarket`, and `/inventory`, the bot uses Riot's official OAuth2 flow:
 
 1. Click the **Login** button
 2. Sign in on the **official Riot Games website**
@@ -151,15 +159,17 @@ inu-bot/
 ├── cogs/
 │   ├── stats.py             # Stat, link, and unlink commands
 │   ├── shop.py              # Shop and Night Market commands
+│   ├── inventory.py         # Skin inventory command
 │   └── info.py              # Help and update commands
 ├── views/
 │   ├── stat_views.py        # Stat UI components & processing
-│   └── shop_views.py        # Shop UI components
+│   ├── shop_views.py        # Shop UI components
+│   └── inventory_views.py   # Inventory UI, weapon filter & pagination
 ├── utils/
 │   ├── __init__.py          # ValorantAPI facade
 │   ├── henrik_api.py        # HenrikDev API wrapper
 │   ├── riot_auth.py         # Riot OAuth2 handler
-│   ├── valorant_assets.py   # Skin & asset fetcher
+│   ├── valorant_assets.py   # Skin & asset prefetcher
 │   ├── user_manager.py      # Account linking (MongoDB)
 │   ├── constants.py         # Rank tiers & icon mappings
 │   └── i18n.py              # Internationalization (vi/en)
@@ -176,7 +186,7 @@ inu-bot/
 | [HenrikDev](https://docs.henrikdev.xyz/) | Player stats, MMR, match history |
 | [Valorant-API.com](https://valorant-api.com/) | Skin metadata, icons, content tiers |
 | Riot Games Auth | OAuth2 authentication |
-| Riot PD API | Store and Night Market data |
+| Riot PD API | Store, Night Market, and Inventory data |
 
 ---
 

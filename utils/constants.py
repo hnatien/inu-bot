@@ -53,3 +53,14 @@ RANK_ICON_BASE: str = (
 )
 
 DEFAULT_RANK_ICON: str = f"{RANK_ICON_BASE}/0/largeicon.png"
+
+ITEM_TYPE_IDS: Dict[str, str] = {
+    "skins": "e7c63390-eda7-46e0-bb7a-a6abdacd2433",
+    "agents": "01bb38e1-da47-4e6a-9b3d-945fe4655707",
+    "buddies": "dd3bf334-87f3-40bd-b043-682a57a8dc3a",
+    "cards": "3f296c07-64c3-494c-923b-fe692a4fa1bd",
+    "sprays": "d5f120f8-ff8c-4aac-92ea-f2b5acbe9475",
+    "titles": "de7caa6b-adf7-4588-bbd1-143831e786c6",
+}
+
+INVENTORY_ITEMS_PER_PAGE: int = 8
