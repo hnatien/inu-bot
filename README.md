@@ -111,6 +111,8 @@ python main.py
 | `/shop` | View your daily shop (requires auth) |
 | `/nightmarket` | View Night Market deals (requires auth) |
 | `/safety` | Explains the authentication security model |
+| `/help` | Usage guide with category navigation |
+| `/update` | View latest bot updates and changelog |
 
 > All slash commands are also available with the `!` prefix.
 
@@ -142,7 +144,8 @@ inu-bot/
 ├── .env.example             # Environment variable template
 ├── cogs/
 │   ├── stats.py             # Stat, link, and unlink commands
-│   └── shop.py              # Shop and Night Market commands
+│   ├── shop.py              # Shop and Night Market commands
+│   └── info.py              # Help and update commands
 ├── views/
 │   ├── stat_views.py        # Stat UI components & processing
 │   └── shop_views.py        # Shop UI components

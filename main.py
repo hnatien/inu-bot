@@ -16,13 +16,14 @@ class ValorantBot(commands.Bot):
     def __init__(self) -> None:
         intents = discord.Intents.default()
         intents.message_content = True
-        super().__init__(command_prefix='!', intents=intents)
+        super().__init__(command_prefix='!', intents=intents, help_command=None)
         self.v_api: ValorantAPI = ValorantAPI()
 
     async def setup_hook(self) -> None:
         """Initialize cogs and API session"""
         await self.load_extension('cogs.stats')
         await self.load_extension('cogs.shop')
+        await self.load_extension('cogs.info')
         
         await self.v_api.init_session()
         
