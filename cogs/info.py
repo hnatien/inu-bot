@@ -13,7 +13,7 @@ CHANGELOG: List[dict] = [
         "date": "2026-02-27",
         "changes": [
             "Ra mắt chính thức Inu Bot",
-            "Tra cứu thống kê người chơi: rank, RR, match history",
+            "Tra cứu stat người chơi: rank, RR, match history",
             "Xem Daily Shop và Night Market",
             "Liên kết tài khoản Discord với Riot ID",
             "Thêm lệnh /help và /update",
@@ -30,12 +30,12 @@ class HelpView(discord.ui.View):
     def __init__(self) -> None:
         super().__init__(timeout=120)
 
-    @discord.ui.button(label="Thống kê", style=discord.ButtonStyle.primary, custom_id="help_stats")
+    @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary, custom_id="help_stats")
     async def stats_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
-            title="HƯỚNG DẪN — THỐNG KÊ",
+            title="HƯỚNG DẪN — STAT",
             description=(
-                "Tra cứu thống kê Valorant theo nhiều cách.\n\n"
+                "Tra cứu stat Valorant theo nhiều cách.\n\n"
                 "```\n"
                 "/stat              Tra cứu nhanh (nếu đã link)\n"
                 "/stat user:@abc    Xem stat của người khác\n"
@@ -53,10 +53,10 @@ class HelpView(discord.ui.View):
         embed.set_footer(text="Inu Bot")
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Cửa hàng", style=discord.ButtonStyle.primary, custom_id="help_shop")
+    @discord.ui.button(label="Shop", style=discord.ButtonStyle.primary, custom_id="help_shop")
     async def shop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
-            title="HƯỚNG DẪN — CỬA HÀNG",
+            title="HƯỚNG DẪN — SHOP",
             description=(
                 "Xem Daily Shop và Night Market của bạn.\n\n"
                 "```\n"
@@ -77,10 +77,10 @@ class HelpView(discord.ui.View):
         embed.set_footer(text="Inu Bot")
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Khác", style=discord.ButtonStyle.secondary, custom_id="help_misc")
+    @discord.ui.button(label="Misc", style=discord.ButtonStyle.secondary, custom_id="help_misc")
     async def misc_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
-            title="HƯỚNG DẪN — KHÁC",
+            title="HƯỚNG DẪN — MISC",
             description=(
                 "Các lệnh tiện ích khác.\n\n"
                 "```\n"
@@ -105,13 +105,13 @@ def _build_help_embed() -> discord.Embed:
     embed = discord.Embed(
         title="HƯỚNG DẪN SỬ DỤNG",
         description=(
-            "Inu Bot giúp bạn tra cứu thống kê Valorant, "
+            "Inu Bot giúp bạn tra cứu stat Valorant, "
             "xem Daily Shop và Night Market.\n\n"
             "Chọn một mục bên dưới để xem chi tiết.\n\n"
             "```\n"
-            "Thống kê    Tra cứu rank, RR, match history\n"
-            "Cửa hàng    Xem shop, night market\n"
-            "Khác        Prefix, hỗ trợ, cập nhật\n"
+            "Stat        Tra cứu rank, RR, match history\n"
+            "Shop        Xem shop, night market\n"
+            "Misc        Prefix, hỗ trợ, cập nhật\n"
             "```"
         ),
         color=EMBED_COLOR,
