@@ -29,6 +29,11 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 - Night Market deals with discount percentages
 - Skin rarity and pricing information
 
+### 🌍 Multi-Language
+- Vietnamese (default) and English support
+- Per-user language preference saved to database
+- Switch anytime with `/language`
+
 ---
 
 ## 📋 Prerequisites
@@ -111,10 +116,11 @@ python main.py
 | `/shop` | View your daily shop (requires auth) |
 | `/nightmarket` | View Night Market deals (requires auth) |
 | `/safety` | Explains the authentication security model |
+| `/language` | Switch language between Vietnamese and English |
 | `/help` | Usage guide with category navigation |
 | `/update` | View latest bot updates and changelog |
 
-> All slash commands are also available with the `!` prefix.
+> All slash commands are also available with the `!` prefix (e.g. `!language en`).
 
 ---
 
@@ -155,7 +161,8 @@ inu-bot/
 │   ├── riot_auth.py         # Riot OAuth2 handler
 │   ├── valorant_assets.py   # Skin & asset fetcher
 │   ├── user_manager.py      # Account linking (MongoDB)
-│   └── constants.py         # Rank tiers & icon mappings
+│   ├── constants.py         # Rank tiers & icon mappings
+│   └── i18n.py              # Internationalization (vi/en)
 └── assets/
     └── skin_prices.json     # Skin pricing data
 ```
