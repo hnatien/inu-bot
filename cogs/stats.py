@@ -22,7 +22,7 @@ class StatsCog(commands.Cog):
         # Verify account exists first
         acc_data = await self.api.get_account_info(name, tag)
         if not acc_data or acc_data.get('status') != 200:
-            await interaction.followup.send(f"❌ Could not find account **{name}#{tag}**. Please check again.", ephemeral=True)
+            await interaction.followup.send(f"[Error] Could not find account **{name}#{tag}**. Please check again.", ephemeral=True)
             return
             
         # Get standardized name from API
@@ -30,16 +30,16 @@ class StatsCog(commands.Cog):
         real_tag = acc_data['data']['tag']
         
         await self.api.link_user(interaction.user.id, real_name, real_tag)
-        await interaction.followup.send(f"✅ Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
+        await interaction.followup.send(f"[Success] Successfully linked your account to **{real_name}#{real_tag}**!", ephemeral=True)
 
     @app_commands.command(name="unlink", description="Unlink your Valorant account from Discord")
     async def unlink(self, interaction: discord.Interaction) -> None:
         """Unlinks the user's Discord ID."""
         success = await self.api.unlink_user(interaction.user.id)
         if success:
-            await interaction.response.send_message("✅ Successfully unlinked your account.", ephemeral=True)
+            await interaction.response.send_message("[Success] Successfully unlinked your account.", ephemeral=True)
         else:
-            await interaction.response.send_message("❌ You don't have a linked account.", ephemeral=True)
+            await interaction.response.send_message("[Error] You don't have a linked account.", ephemeral=True)
 
     @app_commands.command(name="stat", description="Lookup Valorant player statistics globally")
     @app_commands.describe(user="The Discord user to check", name="Riot ID (manual)", tag="Tagline (manual)")
@@ -70,7 +70,7 @@ class StatsCog(commands.Cog):
             # No link found and no manual name/tag, show search UI
             if user:
                 # User specifically asked for someone who isn't linked
-                await interaction.response.send_message(f"❌ {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
+                await interaction.response.send_message(f"[Error] {user.display_name} has not linked their Valorant account yet.", ephemeral=True)
             else:
                 # Just show the generic search UI
                 await self._send_stat_intro(interaction)
@@ -90,11 +90,11 @@ class StatsCog(commands.Cog):
                 "Please click the button below to start.\n\n"
                 "**AVAILABLE DATA INCLUDES:**\n"
                 "```yaml\n"
-                "➤ Profile Level, Rank & Rank Rating (RR)\n"
-                "➤ Kills/Deaths/Assists (K/D/A), Combat Score (ACS)\n"
-                "➤ Results & Match History for the last 5 games\n"
+                "- Profile Level, Rank & Rank Rating (RR)\n"
+                "- Kills/Deaths/Assists (K/D/A), Combat Score (ACS)\n"
+                "- Results & Match History for the last 5 games\n"
                 "```\n"
-                "💡 **TIP:** Use `/link` to connect your account and skip this step next time!"
+                "TIP: Use `/link` to connect your account and skip this step next time!"
             ),
             color=0xFD4553
         )

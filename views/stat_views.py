@@ -13,7 +13,7 @@ class PlayerStatsPagination(discord.ui.View):
         self.m_embed = m_embed
         self.current = 0
 
-    @discord.ui.button(label="MATCH HISTORY", style=discord.ButtonStyle.primary, emoji="📖")
+    @discord.ui.button(label="MATCH HISTORY", style=discord.ButtonStyle.primary)
     async def navigate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         if self.current == 0:
             self.current = 1
@@ -32,7 +32,7 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     if not acc_data or acc_data.get('status') != 200:
         error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
         await interaction.followup.send(
-            f"❌ Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
+            f"[Error] Could not find account **{name}#{tag}**.\nDetails: {error_msg}", 
             ephemeral=True
         )
         return
@@ -58,7 +58,7 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     if mmr_data.get('status') != 200:
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
         await interaction.followup.send(
-            f"❌ Could not find rank data for **{name}#{tag}**.\nDetails: {error_msg}\n*Ensure the player has played at least 1 recent competitive match.*", 
+            f"[Error] Could not find rank data for **{name}#{tag}**.\nDetails: {error_msg}\n*Ensure the player has played at least 1 recent competitive match.*", 
             ephemeral=True
         )
         return
@@ -84,7 +84,7 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     desc_lines = f"**Rank:** {rank}\n{progress_bar}"
     if peak_rank.lower() not in ("unknown", "unrated"):
         _, peak_icon = api.get_rank_assets(peak_rank)
-        desc_lines += f"\n\n🏔️ **Peak Rank:** {peak_rank}"
+        desc_lines += f"\n\n**Peak Rank:** {peak_rank}"
     
     profile_embed = discord.Embed(
         title=f"{name}#{tag}",
@@ -182,8 +182,8 @@ async def process_and_send_stats(interaction: discord.Interaction, api: Valorant
     
     if match_entries:
         for entry in match_entries:
-            result_emoji = "🟢" if entry['is_win'] else "🔴"
-            field_title = f"{result_emoji} {entry['mode']} — {entry['map']}"
+            result_text = "[W]" if entry['is_win'] else "[L]"
+            field_title = f"{result_text} {entry['mode']} — {entry['map']}"
             field_value = (
                 f"```\n"
                 f"Agent : {entry['agent']}\n"
@@ -233,7 +233,7 @@ class StatModal(discord.ui.Modal, title='VALORANT STATS LOOKUP'):
         await process_and_send_stats(interaction, self.api, name, tag)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        msg = f"❌ An error occurred: `{str(error)}`"
+        msg = f"[Error] An error occurred: `{str(error)}`"
         if not interaction.response.is_done():
             await interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -245,6 +245,6 @@ class StatView(discord.ui.View):
         super().__init__(timeout=300)
         self.api = api
 
-    @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger, emoji="🔎", custom_id="stat_lookup_btn")
+    @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger, custom_id="stat_lookup_btn")
     async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         await interaction.response.send_modal(StatModal(self.api))

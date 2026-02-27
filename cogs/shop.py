@@ -47,7 +47,7 @@ class ShopCog(commands.Cog):
         embed = discord.Embed(
             title="GIẢI THÍCH VỀ BẢO MẬT",
             description=description,
-            color=0x2b2d31
+            color=0xfa4454
         )
         embed.set_footer(text="Inu Bot")
         
@@ -69,20 +69,27 @@ class ShopCog(commands.Cog):
         view = ShopView(self.api, auth_url, context, mode=mode)
         
         display_mode = "Daily Shop" if mode == "shop" else "Night Market"
-        title = "🛒 VALORANT STORE" if mode == "shop" else "🌙 NIGHT MARKET"
+        title = "VALORANT STORE" if mode == "shop" else "NIGHT MARKET"
         description = (
-            f"Để xem **{display_mode}**, vui lòng làm theo các bước:\n\n"
-            "1. Nhấn **Đăng nhập Riot** và đăng nhập tài khoản của bạn.\n"
-            "2. Sau khi hiện trang trắng (hoặc lỗi), **Copy toàn bộ Link** trên thanh địa chỉ.\n"
-            "3. Nhấn **Dán Link vào đây** và gửi link bạn vừa copy."
+            f"Vui lòng thực hiện các bước sau để xem **{display_mode}**:\n\n"
+            "> **1.** Nhấn nút **`1. Đăng nhập Riot`** bên dưới.\n"
+            "> **2.** Đăng nhập vào tài khoản Riot Games của bạn.\n"
+            "> **3.** Chờ trang web chuyển hướng (có thể hiển thị trang trắng hoặc lỗi).\n"
+            "> **4.** **Copy toàn bộ URL** (thanh địa chỉ) của trang web đó.\n"
+            "> **5.** Quay lại đây, nhấn **`2. Dán Link vào đây`** và gửi link bạn vừa copy.\n\n"
+            "*Lưu ý: Bạn có thể tham khảo lệnh `/safety` để hiểu rõ hơn về bảo mật tài khoản.*"
         )
         
         embed = discord.Embed(
             title=title,
             description=description,
-            color=0x2b2d31
+            color=0xfa4454
         )
-        embed.set_footer(text="Inu Bot")
+        
+        if isinstance(context, discord.Interaction):
+            embed.set_footer(text="Thực hiện bởi Inu Bot", icon_url=context.user.display_avatar.url)
+        else:
+            embed.set_footer(text="Thực hiện bởi Inu Bot", icon_url=context.author.display_avatar.url)
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)

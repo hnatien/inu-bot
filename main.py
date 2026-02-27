@@ -48,13 +48,13 @@ bot = ValorantBot()
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     """Centralized error handler for slash commands"""
     if isinstance(error, app_commands.CommandOnCooldown):
-        await interaction.response.send_message(f"⌛ Lệnh đang trong thời gian chờ. Thử lại sau {error.retry_after:.2f}s.", ephemeral=True)
+        await interaction.response.send_message(f"Lệnh đang trong thời gian chờ. Thử lại sau {error.retry_after:.2f}s.", ephemeral=True)
     else:
         logger.error(f"App Command Error: {error}")
         if not interaction.response.is_done():
-            await interaction.response.send_message("❌ Đã xảy ra lỗi khi thực hiện lệnh này.", ephemeral=True)
+            await interaction.response.send_message("Đã xảy ra lỗi khi thực hiện lệnh này.", ephemeral=True)
         else:
-            await interaction.followup.send("❌ Đã xảy ra lỗi khi thực hiện lệnh này.", ephemeral=True)
+            await interaction.followup.send("Đã xảy ra lỗi khi thực hiện lệnh này.", ephemeral=True)
 
 if __name__ == "__main__":
     token = os.getenv("DISCORD_TOKEN")

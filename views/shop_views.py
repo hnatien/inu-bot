@@ -28,7 +28,7 @@ class ShopModal(discord.ui.Modal):
 
         success, message, auth = await self.api.auth_with_url(self.url_input.value)
         if not success or not auth:
-            await interaction.followup.send(f"❌ {message}")
+            await interaction.followup.send(f"[Error] {message}")
             return
 
         if self.mode == "shop":
@@ -39,7 +39,7 @@ class ShopModal(discord.ui.Modal):
     async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult) -> None:
         data = await self.api.get_shop(auth)
         if not data:
-            await interaction.followup.send("❌ Không lấy được dữ liệu Daily Shop từ Riot.")
+            await interaction.followup.send("[Error] Không lấy được dữ liệu Daily Shop từ Riot.")
             return
 
         offers = data.get('SingleItemStorefrontOffers', [])
@@ -50,11 +50,11 @@ class ShopModal(discord.ui.Modal):
         time_str = self._format_duration(remaining)
 
         header = discord.Embed(
-            title="🎯 DAILY SHOP",
-            description=f"Cửa hàng của **{auth.game_name}#{auth.tag_line}**\nHết hạn sau: **{time_str}**",
-            color=0x2b2d31
+            title="DAILY SHOP",
+            description=f"> **Tài khoản:** `{auth.game_name}#{auth.tag_line}`\n> **Làm mới sau:** `{time_str}`",
+            color=0xfa4454
         )
-        header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
+        header.set_footer(text="Thực hiện bởi Inu Bot", icon_url=interaction.user.display_avatar.url)
         embeds = [header]
 
         for offer_id in offers:
@@ -63,14 +63,14 @@ class ShopModal(discord.ui.Modal):
                 embeds.append(self._create_skin_embed(details, 0, offer_id))
 
         if len(embeds) <= 1:
-            await interaction.followup.send("⚠️ Không tìm thấy skin nào trong Shop.")
+            await interaction.followup.send("[Warning] Không tìm thấy skin nào trong Shop.")
         else:
             await interaction.followup.send(embeds=embeds)
 
     async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult) -> None:
         data = await self.api.get_nightmarket(auth)
         if not data:
-            await interaction.followup.send("❌ Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
+            await interaction.followup.send("[Error] Hiện tại không có Night Market hoặc không lấy được dữ liệu.")
             return
 
         offers = data.get('BonusStoreOffers', [])
@@ -78,11 +78,11 @@ class ShopModal(discord.ui.Modal):
         time_str = self._format_duration(remaining)
 
         header = discord.Embed(
-            title="🌙 NIGHT MARKET",
-            description=f"Night Market của **{auth.game_name}#{auth.tag_line}**\nHết hạn sau: **{time_str}**",
-            color=0x2b2d31
+            title="NIGHT MARKET",
+            description=f"> **Tài khoản:** `{auth.game_name}#{auth.tag_line}`\n> **Kết thúc sau:** `{time_str}`",
+            color=0xfa4454
         )
-        header.set_footer(text="Inu Bot", icon_url=interaction.user.display_avatar.url)
+        header.set_footer(text="Thực hiện bởi Inu Bot", icon_url=interaction.user.display_avatar.url)
         embeds = [header]
 
         for item in offers:
@@ -101,7 +101,7 @@ class ShopModal(discord.ui.Modal):
                 embeds.append(self._create_skin_embed(details, discount, offer_id))
 
         if len(embeds) <= 1:
-            await interaction.followup.send("⚠️ Không tìm thấy skin nào trong Night Market.")
+            await interaction.followup.send("[Warning] Không tìm thấy skin nào trong Night Market.")
         else:
             await interaction.followup.send(embeds=embeds)
 
@@ -122,7 +122,7 @@ class ShopModal(discord.ui.Modal):
 
         rarity_info = self.api.get_rarity_info(rarity_uuid)
 
-        desc = f"**🔥 Giảm giá: {discount}%**" if discount > 0 else ""
+        desc = f"**Giảm giá: {discount}%**" if discount > 0 else ""
         embed = discord.Embed(title=name, description=desc, color=rarity_info['color'])
         if icon:
             embed.set_thumbnail(url=icon)
@@ -141,8 +141,13 @@ class ShopView(discord.ui.View):
         self.api = api
         self.context = context
         self.mode = mode
+        
         self.add_item(discord.ui.Button(label="1. Đăng nhập Riot", style=discord.ButtonStyle.link, url=auth_url))
+        
+        self.auth_btn = discord.ui.Button(label="2. Dán Link vào đây", style=discord.ButtonStyle.success, custom_id="shop_auth_btn")
+        self.auth_btn.callback = self.open_shop_modal
+        self.add_item(self.auth_btn)
 
-    @discord.ui.button(label="2. Dán Link vào đây", style=discord.ButtonStyle.success, emoji="📥", custom_id="shop_auth_btn")
-    async def open_shop_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+    async def open_shop_modal(self, interaction: discord.Interaction) -> None:
         await interaction.response.send_modal(ShopModal(self.api, self.context, mode=self.mode))
+
