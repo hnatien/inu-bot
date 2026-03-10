@@ -12,6 +12,10 @@ logger = logging.getLogger('ValorantBot')
 
 load_dotenv()
 
+# Fix for SSL Certificate Verification Error on macOS
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+
 class ValorantBot(commands.Bot):
     def __init__(self) -> None:
         intents = discord.Intents.default()
