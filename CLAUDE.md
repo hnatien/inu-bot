@@ -23,7 +23,13 @@ cp .env.example .env  # then fill in real values
 python main.py
 ```
 
-No test framework, linter, or CI pipeline is configured.
+```bash
+# Test
+pip install pytest pytest-asyncio
+pytest                    # run all tests
+pytest tests/test_i18n.py # run a single test file
+pytest -k "test_iron"     # run tests matching pattern
+```
 
 ## Architecture
 

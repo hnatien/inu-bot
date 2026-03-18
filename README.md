@@ -5,45 +5,48 @@
   <img src="https://img.shields.io/badge/License-Personal_Use-red?style=for-the-badge" alt="License">
 </p>
 
-# 🐕 Inu Bot
+# Inu Bot
 
 A feature-rich Discord bot for tracking Valorant player statistics, daily shop rotations, player inventory, and Night Market deals — powered by HenrikDev API and Riot Games OAuth2.
 
 ---
 
-## ✨ Features
+## Features
 
-### 📊 Player Statistics
-- Real-time rank, RR, and peak rank tracking
+### Player Statistics
+- Real-time rank, RR, and peak rank tracking with visual progress bar
 - Match history with K/D/A, ACS, and headshot percentage
 - Agent and map details per match
 - Player card and level display
+- Tab-style navigation between Profile and Match History
 - Global region support (auto-detected per player)
 
-### 🔗 Account Linking
+### Account Linking
 - Link your Discord account to a Riot ID for instant lookups
 - Look up linked friends by mentioning them
 
-### 🛒 Store Tracking
+### Store Tracking
 - Daily shop rotation viewer
 - Night Market deals with discount percentages
 - Skin rarity and pricing information
+- In-place loading indicators while fetching data
 
-### 🎒 Skin Inventory
+### Skin Inventory
 - Browse all owned weapon skins
 - Filter by weapon type (Vandal, Phantom, Melee, etc.)
 - Paginated display with rarity colors and icons
 - Automatic deduplication of skin levels and chromas
 - Multi-region support with automatic shard retry
 
-### 🌍 Multi-Language
+### Multi-Language
 - English (default) and Vietnamese support
 - Per-user language preference saved to database
+- All UI elements (buttons, embeds, errors) are fully localized
 - Switch anytime with `/language`
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - [Python 3.10+](https://www.python.org/downloads/)
 - [Discord Bot Token](https://discord.com/developers/applications)
@@ -52,7 +55,7 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the repository
 
@@ -87,7 +90,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` and fill in your actual values. See [Configuration](#-configuration) for details.
+Edit `.env` and fill in your actual values. See [Configuration](#%EF%B8%8F-configuration) for details.
 
 ### 5. Run the bot
 
@@ -97,21 +100,58 @@ python main.py
 
 ---
 
-## ⚙️ Configuration
+## Testing
+
+The project uses **pytest** with **pytest-asyncio** for async test support. All tests use mocks — no database, API keys, or Discord bot required.
+
+```bash
+# Install test dependencies
+pip install pytest pytest-asyncio
+
+# Run all tests
+pytest
+
+# Run a specific test file
+pytest tests/test_i18n.py
+
+# Run tests matching a pattern
+pytest -k "test_iron"
+
+# Verbose output
+pytest -v
+```
+
+### Test Coverage
+
+| Test File | Module | Tests |
+|---|---|---|
+| `test_i18n.py` | Localization system | 10 |
+| `test_constants.py` | Static data integrity | 17 |
+| `test_riot_auth.py` | OAuth2 auth flow | 9 |
+| `test_henrik_api.py` | HenrikDev API wrapper | 9 |
+| `test_valorant_assets.py` | Asset management & caching | 17 |
+| `test_user_manager.py` | MongoDB user operations | 16 |
+| `test_facade.py` | ValorantAPI facade | 21 |
+| `test_views.py` | Views & UI logic | 18 |
+| **Total** | | **117** |
+
+---
+
+## Configuration
 
 | Variable | Description | Required | Default |
 |---|---|---|---|
-| `DISCORD_TOKEN` | Discord bot token | ✅ | — |
-| `HENRIK_API_KEY` | HenrikDev API key for stats | ✅ | — |
-| `MONGO_URI` | MongoDB connection string | ✅ | — |
-| `RIOT_REGION` | Fallback region (`ap`, `na`, `eu`, `kr`, `latam`, `br`) | ❌ | `ap` |
-| `DISCORD_WEBHOOK_URL` | Webhook URL for logging / notifications | ❌ | — |
+| `DISCORD_TOKEN` | Discord bot token | Yes | — |
+| `HENRIK_API_KEY` | HenrikDev API key for stats | Yes | — |
+| `MONGO_URI` | MongoDB connection string | Yes | — |
+| `RIOT_REGION` | Fallback region (`ap`, `na`, `eu`, `kr`, `latam`, `br`) | No | `ap` |
+| `DISCORD_WEBHOOK_URL` | Webhook URL for logging / notifications | No | — |
 
 > **Note:** Never commit your `.env` file. Use `.env.example` as a template.
 
 ---
 
-## 💬 Commands
+## Commands
 
 | Command | Description |
 |---|---|
@@ -128,58 +168,89 @@ python main.py
 | `/help` | Usage guide with category navigation |
 | `/update` | View latest bot updates and changelog |
 
-> All slash commands are also available with the `!` prefix (e.g. `!language en`).
+> All slash commands are also available with the `!` prefix (e.g. `!stat`, `!shop`, `!language en`).
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
-For `/shop`, `/nightmarket`, and `/inventory`, the bot uses Riot's official OAuth2 flow:
+For `/shop`, `/nightmarket`, and `/inventory`, the bot uses Riot's official **OAuth2 Implicit Grant** flow:
 
-1. Click the **Login** button
-2. Sign in on the **official Riot Games website**
-3. Copy the full redirect URL
-4. Paste it into the modal
+1. Click **Sign in to Riot** — you are taken to Riot's official website
+2. Sign in to your Riot Games account
+3. After redirect, copy the entire URL from the address bar
+4. Click **Paste Link** and submit
 
 **Security guarantees:**
-- Users authenticate directly on Riot's official website — no passwords are collected.
-- Only OAuth2 access tokens are used with **read-only** permissions.
-- Tokens are held **in memory only** and discarded after the session ends.
-- Sensitive data is **never** written to logs.
+- Users authenticate directly on Riot's official website — no passwords are collected
+- Only OAuth2 access tokens are used with **read-only** permissions
+- Tokens are held **in memory only** and discarded immediately after use
+- No tokens are ever written to the database or log files
+- Uses the same mechanism as tracker.gg and other reputable tools
+
+> Use `/safety` in Discord for a detailed security explanation.
 
 ---
 
-## 📁 Project Structure
+## Architecture
+
+Three-tier async architecture with a Facade pattern:
+
+```
+Cogs (commands) → Views (UI/embeds) → ValorantAPI Facade → Services
+```
+
+### Project Structure
 
 ```
 inu-bot/
 ├── main.py                  # Entry point & bot setup
 ├── requirements.txt         # Python dependencies
+├── pytest.ini               # Test configuration
 ├── .env.example             # Environment variable template
 ├── cogs/
 │   ├── stats.py             # Stat, link, and unlink commands
 │   ├── shop.py              # Shop and Night Market commands
 │   ├── inventory.py         # Skin inventory command
-│   └── info.py              # Help and update commands
+│   └── info.py              # Help, update, and language commands
 ├── views/
-│   ├── stat_views.py        # Stat UI components & processing
-│   ├── shop_views.py        # Shop UI components
-│   └── inventory_views.py   # Inventory UI, weapon filter & pagination
+│   ├── stat_views.py        # Stat UI (profile/match tab navigation)
+│   ├── shop_views.py        # Shop UI (auth modal, skin embeds)
+│   └── inventory_views.py   # Inventory UI (weapon filter, pagination)
 ├── utils/
-│   ├── __init__.py          # ValorantAPI facade
-│   ├── henrik_api.py        # HenrikDev API wrapper
-│   ├── riot_auth.py         # Riot OAuth2 handler
-│   ├── valorant_assets.py   # Skin & asset prefetcher
-│   ├── user_manager.py      # Account linking (MongoDB)
-│   ├── constants.py         # Rank tiers & icon mappings
-│   └── i18n.py              # Internationalization (vi/en)
-└── assets/
-    └── skin_prices.json     # Skin pricing data
+│   ├── __init__.py          # ValorantAPI facade (central entry point)
+│   ├── henrik_api.py        # HenrikDev API wrapper (retry, backoff)
+│   ├── riot_auth.py         # Riot OAuth2 handler (AuthResult dataclass)
+│   ├── valorant_assets.py   # Skin & asset prefetcher with cache
+│   ├── user_manager.py      # Account linking & language prefs (MongoDB)
+│   ├── constants.py         # Rank tiers, rarity data, item type IDs
+│   └── i18n.py              # Internationalization (en/vi)
+├── assets/
+│   └── skin_prices.json     # Skin pricing overrides
+└── tests/
+    ├── conftest.py           # Shared fixtures (FakeSession, sample data)
+    ├── test_i18n.py          # Localization tests
+    ├── test_constants.py     # Static data integrity tests
+    ├── test_riot_auth.py     # OAuth2 flow tests
+    ├── test_henrik_api.py    # API wrapper tests
+    ├── test_valorant_assets.py # Asset management tests
+    ├── test_user_manager.py  # MongoDB operation tests
+    ├── test_facade.py        # ValorantAPI facade tests
+    └── test_views.py         # View logic tests
 ```
+
+### Key Design Decisions
+
+- **Facade pattern**: `ValorantAPI` in `utils/__init__.py` composes all services — cogs never call services directly
+- **Per-request auth**: `AuthResult` dataclass avoids race conditions in concurrent OAuth2 flows
+- **Asset prefetching**: Weapon skins are loaded on startup via `asyncio.gather()` for instant lookups
+- **In-place updates**: Bot edits the original message instead of sending new ones, reducing chat clutter
+- **Timeout cleanup**: All views disable buttons automatically after timeout
+- **Owner-only buttons**: `interaction_check` prevents other users from clicking your buttons
 
 ---
 
-## 🌐 APIs Used
+## APIs Used
 
 | API | Purpose |
 |---|---|
@@ -190,17 +261,18 @@ inu-bot/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m "feat: add amazing feature"`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Run tests to make sure nothing breaks (`pytest`)
+4. Commit your changes (`git commit -m "feat: add amazing feature"`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ---
 
-## 📄 License
+## License
 
 This project is for **educational and personal use only**.
 

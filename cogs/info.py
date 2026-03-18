@@ -60,9 +60,10 @@ SUPPORTED_LANGS = [
 class HelpView(discord.ui.View):
     """Paginated help menu with category buttons."""
 
-    def __init__(self, lang: str = "en") -> None:
+    def __init__(self, lang: str = "en", owner_id: int = 0) -> None:
         super().__init__(timeout=120)
         self.lang = lang
+        self.owner_id = owner_id
         self.message: Optional[discord.Message] = None
 
     async def on_timeout(self) -> None:
@@ -74,6 +75,12 @@ class HelpView(discord.ui.View):
                 await self.message.edit(view=self)
             except (discord.NotFound, discord.HTTPException):
                 pass
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.owner_id and interaction.user.id != self.owner_id:
+            await interaction.response.send_message(t("button_denied", self.lang), ephemeral=True)
+            return False
+        return True
 
     @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary)
     async def stats_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
@@ -163,7 +170,7 @@ class InfoCog(commands.Cog):
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         lang = await self._get_lang(user_id)
         embed = _build_help_embed(lang)
-        view = HelpView(lang)
+        view = HelpView(lang, owner_id=user_id)
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view, ephemeral=True)
             try:

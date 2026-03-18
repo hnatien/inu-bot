@@ -40,10 +40,22 @@ class ShopModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
 
+        # Clean up intro message buttons
+        if hasattr(self, 'intro_message') and self.intro_message:
+            try:
+                await self.intro_message.edit(view=None)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
         success, message, auth = await self.api.auth_with_url(self.url_input.value, lang=self.lang)
         if not success or not auth:
-            await interaction.followup.send(f"[Error] {message}")
+            error_embed = discord.Embed(description=message, color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
             return
+
+        # Show loading indicator
+        loading_embed = discord.Embed(description=f"**{t('shop_loading', self.lang)}**", color=0xFD4553)
+        await interaction.edit_original_response(embed=loading_embed)
 
         region = await self._resolve_region(auth)
 
@@ -55,7 +67,8 @@ class ShopModal(discord.ui.Modal):
     async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
         data = await self.api.get_shop(auth, region=region)
         if not data:
-            await interaction.followup.send(f"[Error] {t('shop_error_no_data', self.lang)}")
+            error_embed = discord.Embed(description=t('shop_error_no_data', self.lang), color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
             return
 
         offers = data.get('SingleItemStorefrontOffers', [])
@@ -81,14 +94,16 @@ class ShopModal(discord.ui.Modal):
                 embeds.append(self._create_skin_embed(details, 0, offer_id))
 
         if len(embeds) <= 1:
-            await interaction.followup.send(f"[Warning] {t('shop_no_skins', self.lang)}")
+            error_embed = discord.Embed(description=t('shop_no_skins', self.lang), color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
         else:
-            await interaction.followup.send(embeds=embeds)
+            await interaction.edit_original_response(embeds=embeds)
 
     async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
         data = await self.api.get_nightmarket(auth, region=region)
         if not data:
-            await interaction.followup.send(f"[Error] {t('nm_error_no_data', self.lang)}")
+            error_embed = discord.Embed(description=t('nm_error_no_data', self.lang), color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
             return
 
         offers = data.get('BonusStoreOffers', [])
@@ -121,11 +136,14 @@ class ShopModal(discord.ui.Modal):
                 embeds.append(self._create_skin_embed(details, discount, offer_id))
 
         if len(embeds) <= 1:
-            await interaction.followup.send(f"[Warning] {t('nm_no_skins', self.lang)}")
+            error_embed = discord.Embed(description=t('nm_no_skins', self.lang), color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
         else:
-            await interaction.followup.send(embeds=embeds)
+            await interaction.edit_original_response(embeds=embeds)
 
     def _format_duration(self, seconds: int) -> str:
+        if seconds <= 0:
+            return t("shop_refreshing", self.lang)
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         return f"{hours}h {minutes}m"
@@ -193,4 +211,6 @@ class ShopView(discord.ui.View):
         return True
 
     async def open_shop_modal(self, interaction: discord.Interaction) -> None:
-        await interaction.response.send_modal(ShopModal(self.api, self.context, mode=self.mode, lang=self.lang))
+        modal = ShopModal(self.api, self.context, mode=self.mode, lang=self.lang)
+        modal.intro_message = self.message
+        await interaction.response.send_modal(modal)

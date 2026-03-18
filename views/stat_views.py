@@ -18,6 +18,14 @@ class PlayerStatsPagination(discord.ui.View):
         self.lang = lang
         self.message: Optional[discord.Message] = None
 
+        self.profile_btn = discord.ui.Button(label=t("btn_profile", lang), style=discord.ButtonStyle.primary)
+        self.profile_btn.callback = self._show_profile
+        self.add_item(self.profile_btn)
+
+        self.history_btn = discord.ui.Button(label=t("btn_match_history", lang), style=discord.ButtonStyle.secondary)
+        self.history_btn.callback = self._show_history
+        self.add_item(self.history_btn)
+
     async def on_timeout(self) -> None:
         for item in self.children:
             if hasattr(item, 'disabled'):
@@ -34,37 +42,60 @@ class PlayerStatsPagination(discord.ui.View):
             return False
         return True
 
-    @discord.ui.button(label="MATCH HISTORY", style=discord.ButtonStyle.primary)
-    async def navigate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+    def _update_styles(self) -> None:
         if self.current == 0:
-            self.current = 1
-            button.label = "PROFILE"
-            await interaction.response.edit_message(embed=self.m_embed, view=self)
+            self.profile_btn.style = discord.ButtonStyle.primary
+            self.history_btn.style = discord.ButtonStyle.secondary
         else:
-            self.current = 0
-            button.label = "MATCH HISTORY"
-            await interaction.response.edit_message(embed=self.p_embed, view=self)
+            self.profile_btn.style = discord.ButtonStyle.secondary
+            self.history_btn.style = discord.ButtonStyle.primary
+
+    async def _show_profile(self, interaction: discord.Interaction) -> None:
+        if self.current == 0:
+            await interaction.response.defer()
+            return
+        self.current = 0
+        self._update_styles()
+        await interaction.response.edit_message(embed=self.p_embed, view=self)
+
+    async def _show_history(self, interaction: discord.Interaction) -> None:
+        if self.current == 1:
+            await interaction.response.defer()
+            return
+        self.current = 1
+        self._update_styles()
+        await interaction.response.edit_message(embed=self.m_embed, view=self)
 
 
 async def process_and_send_stats(context: Union[discord.Interaction, commands.Context], api: ValorantAPI, name: str, tag: str, region: Optional[str] = None, lang: str = DEFAULT_LANG) -> None:
     """Core logic to fetch data and send the player stats embed."""
     
-    async def send_response(content: str = None, embed: discord.Embed = None, view: discord.ui.View = None, ephemeral: bool = False):
-        msg = None
-        if isinstance(context, discord.Interaction):
-            if context.response.is_done():
-                msg = await context.followup.send(content=content, embed=embed, view=view, ephemeral=ephemeral)
-            else:
-                await context.response.send_message(content=content, embed=embed, view=view, ephemeral=ephemeral)
-                if view:
-                    try:
-                        msg = await context.original_response()
-                    except discord.HTTPException:
-                        pass
-        else:
-            msg = await context.send(content=content, embed=embed, view=view)
-        if view and msg and hasattr(view, 'message'):
-            view.message = msg
+    is_interaction = isinstance(context, discord.Interaction)
+    ref_msg = None
+
+    loading_embed = discord.Embed(description=f"**{t('stat_loading', lang)}**", color=0xFD4553)
+    if is_interaction:
+        if not context.response.is_done():
+            await context.response.defer()
+        await context.edit_original_response(embed=loading_embed)
+    else:
+        ref_msg = await context.send(embed=loading_embed)
+
+    async def update_response(**kwargs):
+        """Edit the loading message with final content."""
+        if is_interaction:
+            await context.edit_original_response(**kwargs)
+            view = kwargs.get('view')
+            if view and hasattr(view, 'message'):
+                try:
+                    view.message = await context.original_response()
+                except discord.HTTPException:
+                    pass
+        elif ref_msg:
+            await ref_msg.edit(**kwargs)
+            view = kwargs.get('view')
+            if view and hasattr(view, 'message'):
+                view.message = ref_msg
 
     if region:
         results = await asyncio.gather(
@@ -80,10 +111,11 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         acc_data = await api.get_account_info(name, tag)
         if not acc_data or acc_data.get('status') != 200:
             error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
-            await send_response(
-                content=f"[Error] {t('stat_error_account', lang, name=name, tag=tag, error=error_msg)}", 
-                ephemeral=True
+            error_embed = discord.Embed(
+                description=t('stat_error_account', lang, name=name, tag=tag, error=error_msg),
+                color=0xff4444
             )
+            await update_response(embed=error_embed)
             return
         
         region = str(acc_data.get('data', {}).get('region', 'na')).lower()
@@ -105,10 +137,11 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     
     if mmr_data.get('status') != 200:
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
-        await send_response(
-            content=f"[Error] {t('stat_error_rank', lang, name=name, tag=tag, error=error_msg)}", 
-            ephemeral=True
+        error_embed = discord.Embed(
+            description=t('stat_error_rank', lang, name=name, tag=tag, error=error_msg),
+            color=0xff4444
         )
+        await update_response(embed=error_embed)
         return
 
     mmr_full = mmr_data.get('data', {})
@@ -251,21 +284,22 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
 
     owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
 
-    await send_response(
-        embed=profile_embed, 
+    await update_response(
+        embed=profile_embed,
         view=PlayerStatsPagination(profile_embed, matches_embed, owner_id, lang=lang)
     )
 
 
 class StatModal(discord.ui.Modal):
-    def __init__(self, api: ValorantAPI, lang: str = DEFAULT_LANG) -> None:
+    def __init__(self, api: ValorantAPI, lang: str = DEFAULT_LANG, intro_message: Optional[discord.Message] = None) -> None:
         super().__init__(title=t("stat_modal_title", lang))
         self.api = api
         self.lang = lang
+        self.intro_message = intro_message
 
         self.name_input = discord.ui.TextInput(
             label=t("stat_modal_name", lang),
-            placeholder='Example: inu inu',
+            placeholder=t("stat_modal_name_ph", lang),
             required=True,
             max_length=16
         )
@@ -273,7 +307,7 @@ class StatModal(discord.ui.Modal):
 
         self.tag_input = discord.ui.TextInput(
             label=t("stat_modal_tag", lang),
-            placeholder='Example: 2804',
+            placeholder=t("stat_modal_tag_ph", lang),
             required=True,
             min_length=3,
             max_length=5
@@ -284,6 +318,12 @@ class StatModal(discord.ui.Modal):
         name = self.name_input.value.strip()
         tag = self.tag_input.value.strip()
         await interaction.response.defer(ephemeral=False)
+        # Clean up the intro message buttons
+        if self.intro_message:
+            try:
+                await self.intro_message.edit(view=None)
+            except (discord.NotFound, discord.HTTPException):
+                pass
         await process_and_send_stats(interaction, self.api, name, tag, lang=self.lang)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -302,6 +342,10 @@ class StatView(discord.ui.View):
         self.lang = lang
         self.message: Optional[discord.Message] = None
 
+        self.lookup_btn = discord.ui.Button(label=t("btn_lookup", lang), style=discord.ButtonStyle.primary)
+        self.lookup_btn.callback = self._open_modal
+        self.add_item(self.lookup_btn)
+
     async def on_timeout(self) -> None:
         for item in self.children:
             if hasattr(item, 'disabled'):
@@ -318,6 +362,5 @@ class StatView(discord.ui.View):
             return False
         return True
 
-    @discord.ui.button(label="LOOKUP NOW", style=discord.ButtonStyle.danger)
-    async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        await interaction.response.send_modal(StatModal(self.api, lang=self.lang))
+    async def _open_modal(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_modal(StatModal(self.api, lang=self.lang, intro_message=self.message))

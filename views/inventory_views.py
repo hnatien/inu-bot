@@ -52,11 +52,19 @@ class InventoryModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
 
+        # Clean up intro message buttons
+        if hasattr(self, 'intro_message') and self.intro_message:
+            try:
+                await self.intro_message.edit(view=None)
+            except (discord.NotFound, discord.HTTPException):
+                pass
+
         success, message, auth = await self.api.auth_with_url(
             self.url_input.value, lang=self.lang
         )
         if not success or not auth:
-            await interaction.followup.send(f"[Error] {message}")
+            error_embed = discord.Embed(description=message, color=0xff4444)
+            await interaction.edit_original_response(embed=error_embed)
             return
 
         region = await self._resolve_region(auth)
@@ -399,6 +407,6 @@ class InventoryIntroView(discord.ui.View):
         return True
 
     async def _open_modal(self, interaction: discord.Interaction) -> None:
-        await interaction.response.send_modal(
-            InventoryModal(self.api, self.context, lang=self.lang)
-        )
+        modal = InventoryModal(self.api, self.context, lang=self.lang)
+        modal.intro_message = self.message
+        await interaction.response.send_modal(modal)

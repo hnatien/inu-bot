@@ -71,7 +71,7 @@ class ShopCog(commands.Cog):
         auth_url = self.api.get_auth_link()
         view = ShopView(self.api, auth_url, context, mode=mode, lang=lang)
         
-        display_mode = "Daily Shop" if mode == "shop" else "Night Market"
+        display_mode = t("mode_daily_shop", lang) if mode == "shop" else t("mode_night_market", lang)
 
         embed = discord.Embed(
             title=t("title_valorant_store", lang) if mode == "shop" else t("title_night_market", lang),

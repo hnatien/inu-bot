@@ -82,12 +82,12 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "**Discount: {percent}%**",
     },
     "btn_login": {
-        "vi": "1. Đăng nhập Riot",
-        "en": "1. Sign in to Riot",
+        "vi": "Đăng nhập Riot",
+        "en": "Sign in to Riot",
     },
     "btn_paste": {
-        "vi": "2. Dán Link vào đây",
-        "en": "2. Paste Link Here",
+        "vi": "Dán Link",
+        "en": "Paste Link",
     },
     "footer": {
         "vi": "Inu Bot",
@@ -95,22 +95,18 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
     "shop_intro": {
         "vi": (
-            "Làm theo các bước sau để xem **{mode}** nhé:\n\n"
-            "> **1.** Nhấn nút **`1. Đăng nhập Riot`** bên dưới.\n"
-            "> **2.** Đăng nhập tài khoản Riot Games.\n"
-            "> **3.** Chờ trang web chuyển hướng (có thể hiện trang trắng).\n"
-            "> **4.** **Copy toàn bộ URL** trên thanh địa chỉ.\n"
-            "> **5.** Quay lại đây, nhấn **`2. Dán Link vào đây`** và gửi link.\n\n"
-            "*Dùng `/safety` để tìm hiểu về bảo mật tài khoản.*"
+            "Để xem **{mode}**, hãy làm 3 bước:\n\n"
+            "1️⃣ Nhấn **Đăng nhập Riot** → đăng nhập tài khoản\n"
+            "2️⃣ Sau khi chuyển hướng, **copy toàn bộ URL** trên thanh địa chỉ\n"
+            "3️⃣ Nhấn **Dán Link** → paste URL vừa copy\n\n"
+            "*Dùng `/safety` để tìm hiểu về bảo mật.*"
         ),
         "en": (
-            "Please follow these steps to view your **{mode}**:\n\n"
-            "> **1.** Click the **`1. Sign in to Riot`** button below.\n"
-            "> **2.** Sign in to your Riot Games account.\n"
-            "> **3.** Wait for the page to redirect (it may show a blank page or an error).\n"
-            "> **4.** **Copy the entire URL** from the address bar.\n"
-            "> **5.** Come back here, click **`2. Paste Link Here`** and submit the link.\n\n"
-            "*Use `/safety` to learn more about account security.*"
+            "To view your **{mode}**, follow 3 steps:\n\n"
+            "1️⃣ Click **Sign in to Riot** → sign in to your account\n"
+            "2️⃣ After redirect, **copy the entire URL** from the address bar\n"
+            "3️⃣ Click **Paste Link** → paste the URL you copied\n\n"
+            "*Use `/safety` to learn more about security.*"
         ),
     },
     "safety_title": {
@@ -399,22 +395,18 @@ STRINGS: Dict[str, Dict[str, str]] = {
 
     "inv_intro": {
         "vi": (
-            "Làm theo các bước sau để xem **Inventory** nhé:\n\n"
-            "> **1.** Nhấn nút **`1. Đăng nhập Riot`** bên dưới.\n"
-            "> **2.** Đăng nhập tài khoản Riot Games.\n"
-            "> **3.** Chờ trang web chuyển hướng (có thể hiện trang trắng).\n"
-            "> **4.** **Copy toàn bộ URL** trên thanh địa chỉ.\n"
-            "> **5.** Quay lại đây, nhấn **`2. Dán Link vào đây`** và gửi link.\n\n"
-            "*Dùng `/safety` để tìm hiểu về bảo mật tài khoản.*"
+            "Để xem **Inventory**, hãy làm 3 bước:\n\n"
+            "1️⃣ Nhấn **Đăng nhập Riot** → đăng nhập tài khoản\n"
+            "2️⃣ Sau khi chuyển hướng, **copy toàn bộ URL** trên thanh địa chỉ\n"
+            "3️⃣ Nhấn **Dán Link** → paste URL vừa copy\n\n"
+            "*Dùng `/safety` để tìm hiểu về bảo mật.*"
         ),
         "en": (
-            "Please follow these steps to view your **Inventory**:\n\n"
-            "> **1.** Click the **`1. Sign in to Riot`** button below.\n"
-            "> **2.** Sign in to your Riot Games account.\n"
-            "> **3.** Wait for the page to redirect (it may show a blank page or an error).\n"
-            "> **4.** **Copy the entire URL** from the address bar.\n"
-            "> **5.** Come back here, click **`2. Paste Link Here`** and submit the link.\n\n"
-            "*Use `/safety` to learn more about account security.*"
+            "To view your **Inventory**, follow 3 steps:\n\n"
+            "1️⃣ Click **Sign in to Riot** → sign in to your account\n"
+            "2️⃣ After redirect, **copy the entire URL** from the address bar\n"
+            "3️⃣ Click **Paste Link** → paste the URL you copied\n\n"
+            "*Use `/safety` to learn more about security.*"
         ),
     },
     "inv_modal_title": {
@@ -501,6 +493,46 @@ STRINGS: Dict[str, Dict[str, str]] = {
     "no_data": {
         "vi": "Không có dữ liệu",
         "en": "No Data",
+    },
+    "stat_loading": {
+        "vi": "Đang tra cứu...",
+        "en": "Looking up stats...",
+    },
+    "shop_loading": {
+        "vi": "Đang tải...",
+        "en": "Loading...",
+    },
+    "shop_refreshing": {
+        "vi": "Đang cập nhật...",
+        "en": "Refreshing...",
+    },
+    "btn_profile": {
+        "vi": "Hồ sơ",
+        "en": "Profile",
+    },
+    "btn_match_history": {
+        "vi": "Lịch sử trận",
+        "en": "Match History",
+    },
+    "btn_lookup": {
+        "vi": "TRA CỨU",
+        "en": "LOOK UP",
+    },
+    "mode_daily_shop": {
+        "vi": "Cửa Hàng",
+        "en": "Daily Shop",
+    },
+    "mode_night_market": {
+        "vi": "Chợ Đêm",
+        "en": "Night Market",
+    },
+    "stat_modal_name_ph": {
+        "vi": "VD: TenZ",
+        "en": "e.g. TenZ",
+    },
+    "stat_modal_tag_ph": {
+        "vi": "VD: SEN",
+        "en": "e.g. SEN",
     },
 }
 

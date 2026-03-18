@@ -97,8 +97,7 @@ class StatsCog(commands.Cog):
             color=0xFD4553
         )
         embed.set_thumbnail(url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
-        embed.set_image(url="https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt76953f937803e480/6234eff4093f413d727b14fc/032322_V_Ep4_Act3_Disruption_Social.jpg")
-        embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
+        embed.set_footer(text="Inu Bot • Powered by HenrikDev API")
 
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)
