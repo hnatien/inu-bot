@@ -16,6 +16,17 @@ class PlayerStatsPagination(discord.ui.View):
         self.current = 0
         self.owner_id = owner_id
         self.lang = lang
+        self.message: Optional[discord.Message] = None
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled'):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
@@ -39,13 +50,21 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     """Core logic to fetch data and send the player stats embed."""
     
     async def send_response(content: str = None, embed: discord.Embed = None, view: discord.ui.View = None, ephemeral: bool = False):
+        msg = None
         if isinstance(context, discord.Interaction):
             if context.response.is_done():
-                await context.followup.send(content=content, embed=embed, view=view, ephemeral=ephemeral)
+                msg = await context.followup.send(content=content, embed=embed, view=view, ephemeral=ephemeral)
             else:
                 await context.response.send_message(content=content, embed=embed, view=view, ephemeral=ephemeral)
+                if view:
+                    try:
+                        msg = await context.original_response()
+                    except discord.HTTPException:
+                        pass
         else:
-            await context.send(content=content, embed=embed, view=view)
+            msg = await context.send(content=content, embed=embed, view=view)
+        if view and msg and hasattr(view, 'message'):
+            view.message = msg
 
     if region:
         results = await asyncio.gather(
@@ -204,7 +223,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
                 })
 
     matches_embed = discord.Embed(
-        title=f"MATCH HISTORY — {name}#{tag}",
+        title=t("title_match_history", lang, name=name, tag=tag),
         color=rank_color
     )
     matches_embed.set_thumbnail(url=rank_icon)
@@ -223,7 +242,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
             matches_embed.add_field(name=field_title, value=field_value, inline=False)
     else:
         matches_embed.add_field(
-            name="No Data", 
+            name=t("no_data", lang),
             value=f"```\n{t('stat_no_matches', lang)}\n```", 
             inline=False
         )
@@ -281,6 +300,17 @@ class StatView(discord.ui.View):
         self.api = api
         self.owner_id = owner_id
         self.lang = lang
+        self.message: Optional[discord.Message] = None
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled'):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

@@ -16,16 +16,18 @@ class InventoryCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.api: ValorantAPI = getattr(bot, 'v_api')
+        self.api: ValorantAPI = bot.v_api
 
     async def _get_lang(self, user_id: int) -> str:
         return await self.api.get_language(user_id)
 
     @app_commands.command(name="inventory", description="View your Valorant Inventory")
+    @app_commands.checks.cooldown(1, 15, key=lambda i: i.user.id)
     async def inventory_slash(self, interaction: discord.Interaction) -> None:
         await self._send_intro(interaction)
 
     @commands.command(name="inventory", aliases=["inv"])
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def inventory_prefix(self, ctx: commands.Context) -> None:
         await self._send_intro(ctx)
 
@@ -37,7 +39,7 @@ class InventoryCog(commands.Cog):
         view = InventoryIntroView(self.api, auth_url, context, lang=lang)
 
         embed = discord.Embed(
-            title="VALORANT INVENTORY",
+            title=t("title_inventory", lang),
             description=t("inv_intro", lang),
             color=0xfa4454,
         )
@@ -45,9 +47,13 @@ class InventoryCog(commands.Cog):
         if isinstance(context, discord.Interaction):
             embed.set_footer(text=t("footer", lang), icon_url=context.user.display_avatar.url)
             await context.response.send_message(embed=embed, view=view)
+            try:
+                view.message = await context.original_response()
+            except discord.HTTPException:
+                pass
         else:
             embed.set_footer(text=t("footer", lang), icon_url=context.author.display_avatar.url)
-            await context.send(embed=embed, view=view)
+            view.message = await context.send(embed=embed, view=view)
 
 
 async def setup(bot: commands.Bot) -> None:

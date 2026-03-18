@@ -78,3 +78,9 @@ class UserManager:
             upsert=True
         )
         return True
+
+    async def close(self) -> None:
+        """Close MongoDB connection."""
+        if self.client:
+            self.client.close()
+            self.client = None

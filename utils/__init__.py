@@ -47,6 +47,7 @@ class ValorantAPI:
         if self.session:
             await self.session.close()
             self.session = None
+        await self.user_manager.close()
 
     def get_auth_link(self) -> str:
         return self.auth.get_auth_link()
@@ -71,44 +72,36 @@ class ValorantAPI:
             await self.init_session()
         return await self.henrik.get_recent_matches(name, tag, self.session, region=region)
 
-    async def get_shop(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Fetch user's daily shop storefront"""
+    async def _get_storefront(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch the full storefront data from Riot API."""
         if not self.session:
-            return None
+            await self.init_session()
         target_region = region or self.region
         url = f"https://pd.{target_region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
         try:
             async with self.session.post(url, headers=auth.headers, json={}) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
-                    return data.get('SkinsPanelLayout', {})
+                    return await resp.json()
                 else:
-                    logger.error(f"Shop API Error {resp.status}: {await resp.text()}")
+                    logger.error(f"Storefront API Error {resp.status}: {await resp.text()}")
         except Exception as e:
-            logger.error(f"Failed to get shop: {e}")
+            logger.error(f"Failed to get storefront: {e}")
         return None
+
+    async def get_shop(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch user's daily shop storefront"""
+        data = await self._get_storefront(auth, region)
+        return data.get('SkinsPanelLayout', {}) if data else None
 
     async def get_nightmarket(self, auth: AuthResult, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Fetch user's Night Market (BonusStore)"""
-        if not self.session:
-            return None
-        target_region = region or self.region
-        url = f"https://pd.{target_region}.a.pvp.net/store/v3/storefront/{auth.puuid}"
-        try:
-            async with self.session.post(url, headers=auth.headers, json={}) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    return data.get('BonusStore', {})
-                else:
-                    logger.error(f"Night Market API Error {resp.status}: {await resp.text()}")
-        except Exception as e:
-            logger.error(f"Failed to get Night Market: {e}")
-        return None
+        data = await self._get_storefront(auth, region)
+        return data.get('BonusStore', {}) if data else None
 
     async def get_inventory(self, auth: AuthResult, item_type: str, region: Optional[str] = None) -> list:
         """Fetch player-owned items by category from the entitlements endpoint."""
         if not self.session:
-            return []
+            await self.init_session()
         type_id = ITEM_TYPE_IDS.get(item_type)
         if not type_id:
             logger.error(f"Unknown item type: {item_type}")

@@ -74,6 +74,10 @@ class RiotAuth:
             version = await self._get_client_version(session)
             headers['X-Riot-ClientVersion'] = version
 
+            # Validate URL is from Riot's official domain
+            if not re.match(r'https?://(playvalorant\.com|auth\.riotgames\.com)', url):
+                return False, t("auth_invalid_url", lang), None
+
             access_token_match = re.search(r'access_token=([^&]+)', url)
             if not access_token_match:
                 return False, t("auth_no_token", lang), None

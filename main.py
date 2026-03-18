@@ -50,6 +50,22 @@ class ValorantBot(commands.Bot):
 
 bot = ValorantBot()
 
+@bot.event
+async def on_command_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    """Centralized error handler for prefix commands"""
+    if isinstance(error, commands.CommandOnCooldown):
+        lang = "en"
+        try:
+            lang = await bot.v_api.get_language(ctx.author.id)
+        except Exception:
+            pass
+        from utils.i18n import t
+        await ctx.send(t("error_cooldown", lang, retry_after=f"{error.retry_after:.2f}"))
+    elif isinstance(error, commands.CommandNotFound):
+        pass
+    else:
+        logger.error(f"Command Error: {error}")
+
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     """Centralized error handler for slash commands"""

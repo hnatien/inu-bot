@@ -83,7 +83,14 @@ class InventoryModal(discord.ui.Modal):
         
         for s in shards_to_try:
             logger.info(f"Trying inventory for region: {s}")
-            item_ids = await self.api.get_inventory(auth, "skins", region=s)
+            try:
+                item_ids = await asyncio.wait_for(
+                    self.api.get_inventory(auth, "skins", region=s),
+                    timeout=10.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"Inventory request timed out for region: {s}")
+                continue
             if item_ids:
                 final_region = s
                 break
@@ -110,6 +117,10 @@ class InventoryModal(discord.ui.Modal):
         )
         embeds = view.build_page()
         await interaction.edit_original_response(embeds=embeds, view=view)
+        try:
+            view.message = await interaction.original_response()
+        except discord.HTTPException:
+            pass
 
     async def _resolve_skin_details(self, item_ids: List[str]) -> List[Dict[str, Any]]:
         tasks = [self.api.get_skin_details(uid) for uid in item_ids]
@@ -190,8 +201,19 @@ class InventoryPaginatorView(discord.ui.View):
         self.current_page = 0
         self.owner_id = interaction.user.id
         self._avatar_url = interaction.user.display_avatar.url
+        self.message: Optional[discord.Message] = None
 
         self._rebuild_components()
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled'):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     @property
     def total_pages(self) -> int:
@@ -342,6 +364,7 @@ class InventoryIntroView(discord.ui.View):
             if isinstance(context, discord.Interaction)
             else context.author.id
         )
+        self.message: Optional[discord.Message] = None
 
         self.add_item(
             discord.ui.Button(
@@ -356,6 +379,16 @@ class InventoryIntroView(discord.ui.View):
         )
         self.auth_btn.callback = self._open_modal
         self.add_item(self.auth_btn)
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled') and not isinstance(item, discord.ui.Button) or (isinstance(item, discord.ui.Button) and item.style != discord.ButtonStyle.link):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

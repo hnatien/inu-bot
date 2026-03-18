@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import urllib.parse
@@ -5,9 +6,6 @@ from typing import Dict, Optional, Any
 
 import aiohttp
 
-from dotenv import load_dotenv
-
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 logger = logging.getLogger('HenrikAPI')
 
 
@@ -25,24 +23,34 @@ class HenrikAPI:
         if not self.henrik_key:
             logger.error("HENRIK_API_KEY NOT FOUND IN ENVIRONMENT VARIABLES")
 
-    async def _request(self, endpoint: str, session: aiohttp.ClientSession) -> Optional[Dict[str, Any]]:
-        """Generic wrapper for HenrikDev API requests"""
+    async def _request(self, endpoint: str, session: aiohttp.ClientSession, max_retries: int = 2) -> Optional[Dict[str, Any]]:
+        """Generic wrapper for HenrikDev API requests with retry and backoff"""
         url = f"https://api.henrikdev.xyz/valorant/{endpoint}"
-        
         h = {"Authorization": self.henrik_key} if self.henrik_key else {}
-        try:
-            async with session.get(url, headers=h) as resp:
-                if resp.status == 200:
-                    return await resp.json()
-                else:
-                    logger.warning(f"HenrikDev API Error ({endpoint}): Status {resp.status}")
-                    # Log more detail for 401
-                    if resp.status == 401:
-                        logger.error(f"AUTHENTICATION FAILED: Check if HENRIK_API_KEY is valid. Key length: {len(self.henrik_key) if self.henrik_key else 0}")
-                    return None
-        except Exception as e:
-            logger.error(f"HenrikDev API Exception ({endpoint}): {e}")
-            return None
+
+        for attempt in range(max_retries + 1):
+            try:
+                async with session.get(url, headers=h) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    elif resp.status == 429 or resp.status >= 500:
+                        if attempt < max_retries:
+                            await asyncio.sleep(1.0 * (attempt + 1))
+                            continue
+                        logger.warning(f"HenrikDev API Error ({endpoint}): Status {resp.status} after {max_retries + 1} attempts")
+                        return None
+                    else:
+                        logger.warning(f"HenrikDev API Error ({endpoint}): Status {resp.status}")
+                        if resp.status == 401:
+                            logger.error(f"AUTHENTICATION FAILED: Check if HENRIK_API_KEY is valid. Key length: {len(self.henrik_key) if self.henrik_key else 0}")
+                        return None
+            except Exception as e:
+                if attempt < max_retries:
+                    await asyncio.sleep(1.0 * (attempt + 1))
+                    continue
+                logger.error(f"HenrikDev API Exception ({endpoint}): {e}")
+                return None
+        return None
 
     async def get_stats(self, name: str, tag: str, session: aiohttp.ClientSession, region: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get MMR/Rank stats (v3 is the latest)"""

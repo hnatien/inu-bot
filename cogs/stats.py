@@ -12,7 +12,7 @@ class StatsCog(commands.Cog):
     
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.api: ValorantAPI = getattr(bot, 'v_api')
+        self.api: ValorantAPI = bot.v_api
 
     async def _get_lang(self, user_id: int) -> str:
         return await self.api.get_language(user_id)
@@ -92,7 +92,7 @@ class StatsCog(commands.Cog):
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         view = StatView(self.api, user_id, lang=lang)
         embed = discord.Embed(
-            title="VALORANT TRACKER",
+            title=t("title_valorant_tracker", lang),
             description=t("stat_intro", lang),
             color=0xFD4553
         )
@@ -102,8 +102,12 @@ class StatsCog(commands.Cog):
 
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)
+            try:
+                view.message = await context.original_response()
+            except discord.HTTPException:
+                pass
         else:
-            await context.send(embed=embed, view=view)
+            view.message = await context.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(StatsCog(bot))

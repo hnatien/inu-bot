@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from typing import Union, List
+from typing import Optional, Union, List
 
 from utils import ValorantAPI
 from utils.i18n import t
@@ -63,6 +63,17 @@ class HelpView(discord.ui.View):
     def __init__(self, lang: str = "en") -> None:
         super().__init__(timeout=120)
         self.lang = lang
+        self.message: Optional[discord.Message] = None
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled'):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary)
     async def stats_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
@@ -120,7 +131,7 @@ def _build_update_embed(lang: str = "en") -> discord.Embed:
     description_parts: list[str] = []
 
     for entry in entries:
-        changes = entry.get(f"changes_{lang}", entry.get("changes_vi"))
+        changes = entry.get(f"changes_{lang}", entry.get("changes_en"))
         changes_text = "\n".join(f"  - {c}" for c in changes)
         description_parts.append(
             f"**v{entry['version']}** — {entry['date']}\n"
@@ -143,7 +154,7 @@ class InfoCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.api: ValorantAPI = getattr(bot, 'v_api')
+        self.api: ValorantAPI = bot.v_api
 
     async def _get_lang(self, user_id: int) -> str:
         return await self.api.get_language(user_id)
@@ -155,8 +166,12 @@ class InfoCog(commands.Cog):
         view = HelpView(lang)
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view, ephemeral=True)
+            try:
+                view.message = await context.original_response()
+            except discord.HTTPException:
+                pass
         else:
-            await context.send(embed=embed, view=view)
+            view.message = await context.send(embed=embed, view=view)
 
     async def _send_update(self, context: Union[discord.Interaction, commands.Context]) -> None:
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id

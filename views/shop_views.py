@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, Any, Union
+from typing import Dict, Any, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -67,7 +67,7 @@ class ShopModal(discord.ui.Modal):
         account = f"{auth.game_name}#{auth.tag_line}"
 
         header = discord.Embed(
-            title="DAILY SHOP",
+            title=t("title_daily_shop", self.lang),
             description=t("shop_header", self.lang, account=account, time=time_str),
             color=0xfa4454
         )
@@ -97,7 +97,7 @@ class ShopModal(discord.ui.Modal):
         account = f"{auth.game_name}#{auth.tag_line}"
 
         header = discord.Embed(
-            title="NIGHT MARKET",
+            title=t("title_night_market", self.lang),
             description=t("nm_header", self.lang, account=account, time=time_str),
             color=0xfa4454
         )
@@ -168,12 +168,23 @@ class ShopView(discord.ui.View):
         self.mode = mode
         self.lang = lang
         self.owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
-        
+        self.message: Optional[discord.Message] = None
+
         self.add_item(discord.ui.Button(label=t("btn_login", lang), style=discord.ButtonStyle.link, url=auth_url))
-        
+
         self.auth_btn = discord.ui.Button(label=t("btn_paste", lang), style=discord.ButtonStyle.success)
         self.auth_btn.callback = self.open_shop_modal
         self.add_item(self.auth_btn)
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            if hasattr(item, 'disabled') and not isinstance(item, discord.ui.Button) or (isinstance(item, discord.ui.Button) and item.style != discord.ButtonStyle.link):
+                item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except (discord.NotFound, discord.HTTPException):
+                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

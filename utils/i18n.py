@@ -16,6 +16,10 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "You cannot use this button.",
     },
 
+    "auth_invalid_url": {
+        "vi": "URL không hợp lệ. Vui lòng copy URL từ trang `playvalorant.com`.",
+        "en": "Invalid URL. Please copy the URL from the `playvalorant.com` page.",
+    },
     "auth_no_token": {
         "vi": "Không tìm thấy Access Token. Bạn copy lại toàn bộ URL nhé.",
         "en": "Access Token not found. Please copy the entire URL.",
@@ -468,6 +472,35 @@ STRINGS: Dict[str, Dict[str, str]] = {
     "inv_weapon_placeholder": {
         "vi": "Lọc theo vũ khí...",
         "en": "Filter by weapon...",
+    },
+
+    "title_daily_shop": {
+        "vi": "CỬA HÀNG HÀNG NGÀY",
+        "en": "DAILY SHOP",
+    },
+    "title_night_market": {
+        "vi": "CHỢ ĐÊM",
+        "en": "NIGHT MARKET",
+    },
+    "title_valorant_tracker": {
+        "vi": "VALORANT TRACKER",
+        "en": "VALORANT TRACKER",
+    },
+    "title_valorant_store": {
+        "vi": "CỬA HÀNG VALORANT",
+        "en": "VALORANT STORE",
+    },
+    "title_match_history": {
+        "vi": "LỊCH SỬ TRẬN ĐẤU — {name}#{tag}",
+        "en": "MATCH HISTORY — {name}#{tag}",
+    },
+    "title_inventory": {
+        "vi": "KHO ĐỒ VALORANT",
+        "en": "VALORANT INVENTORY",
+    },
+    "no_data": {
+        "vi": "Không có dữ liệu",
+        "en": "No Data",
     },
 }
 
