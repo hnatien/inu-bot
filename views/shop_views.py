@@ -161,8 +161,7 @@ class ShopModal(discord.ui.Modal):
         rarity_info = self.api.get_rarity_info(rarity_uuid)
         rarity_icon = self.api.get_rarity_icon(rarity_uuid)
 
-        desc = t("discount", self.lang, percent=discount) if discount > 0 else ""
-        embed = discord.Embed(description=desc, color=rarity_info['color'])
+        embed = discord.Embed(color=rarity_info['color'])
         if rarity_icon:
             embed.set_author(name=name, icon_url=rarity_icon)
         else:
