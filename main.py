@@ -91,8 +91,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 
 if __name__ == "__main__":
     token = os.getenv("DISCORD_TOKEN")
-    proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
     if not token:
         logger.error("DISCORD_TOKEN not found in environment variables.")
     else:
-        bot.run(token, proxy=proxy)
+        bot.run(token)
