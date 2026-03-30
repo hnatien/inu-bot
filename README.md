@@ -29,7 +29,8 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 - Daily shop rotation viewer
 - Night Market deals with discount percentages
 - Skin rarity and pricing information
-- In-place loading indicators while fetching data
+- In-place loading indicators with wait-time hints while fetching data
+- Timeout-expiry notices when interactive buttons become inactive
 
 ### Skin Inventory
 - Browse all owned weapon skins
@@ -37,6 +38,7 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 - Paginated display with rarity colors and icons
 - Automatic deduplication of skin levels and chromas
 - Multi-region support with automatic shard retry
+- Clear error distinction between empty inventory and all-region network failures
 
 ### Multi-Language
 - English (default) and Vietnamese support
@@ -106,7 +108,7 @@ The project uses **pytest** with **pytest-asyncio** for async test support. All 
 
 ```bash
 # Install test dependencies
-pip install pytest pytest-asyncio
+pip install pytest pytest-asyncio pytest-cov
 
 # Run all tests
 pytest
@@ -119,21 +121,27 @@ pytest -k "test_iron"
 
 # Verbose output
 pytest -v
+
+# Run with coverage
+pytest --cov=utils --cov=views --cov=cogs --cov-report=term-missing
 ```
 
 ### Test Coverage
 
-| Test File | Module | Tests |
-|---|---|---|
-| `test_i18n.py` | Localization system | 10 |
-| `test_constants.py` | Static data integrity | 17 |
-| `test_riot_auth.py` | OAuth2 auth flow | 9 |
-| `test_henrik_api.py` | HenrikDev API wrapper | 9 |
-| `test_valorant_assets.py` | Asset management & caching | 17 |
-| `test_user_manager.py` | MongoDB user operations | 16 |
-| `test_facade.py` | ValorantAPI facade | 21 |
-| `test_views.py` | Views & UI logic | 18 |
-| **Total** | | **117** |
+| Test File | Focus |
+|---|---|
+| `test_i18n.py` | Localization strings and fallback behavior |
+| `test_constants.py` | Static data integrity |
+| `test_riot_auth.py` | OAuth2 auth flow and token parsing |
+| `test_henrik_api.py` | HenrikDev API wrapper and retry behavior |
+| `test_valorant_assets.py` | Asset management, caching, rarity/price helpers |
+| `test_user_manager.py` | MongoDB user and language operations |
+| `test_facade.py` | ValorantAPI facade delegation and inventory/storefront logic |
+| `test_views.py` | View helper logic |
+| `test_audit_coverage.py` | Cog/view/facade behavior audit branches |
+| `test_view_flows_audit.py` | End-to-end async flow simulations for stats/shop/inventory |
+
+Current suite includes **157 tests**.
 
 ---
 
@@ -181,6 +189,8 @@ For `/shop`, `/nightmarket`, and `/inventory`, the bot uses Riot's official **OA
 3. After redirect, copy the entire URL from the address bar
 4. Click **Paste Link** and submit
 
+> Buttons in auth intro views expire after 5 minutes. If expired, run the command again.
+
 **Security guarantees:**
 - Users authenticate directly on Riot's official website — no passwords are collected
 - Only OAuth2 access tokens are used with **read-only** permissions
@@ -209,11 +219,13 @@ inu-bot/
 ├── pytest.ini               # Test configuration
 ├── .env.example             # Environment variable template
 ├── cogs/
+│   ├── __init__.py           # Shared CogBase helper
 │   ├── stats.py             # Stat, link, and unlink commands
 │   ├── shop.py              # Shop and Night Market commands
 │   ├── inventory.py         # Skin inventory command
 │   └── info.py              # Help, update, and language commands
 ├── views/
+│   ├── base_views.py        # Shared timeout + interaction UX behavior
 │   ├── stat_views.py        # Stat UI (profile/match tab navigation)
 │   ├── shop_views.py        # Shop UI (auth modal, skin embeds)
 │   └── inventory_views.py   # Inventory UI (weapon filter, pagination)
@@ -236,7 +248,9 @@ inu-bot/
     ├── test_valorant_assets.py # Asset management tests
     ├── test_user_manager.py  # MongoDB operation tests
     ├── test_facade.py        # ValorantAPI facade tests
-    └── test_views.py         # View logic tests
+    ├── test_views.py         # View logic tests
+    ├── test_audit_coverage.py # Cog/view/facade branch coverage tests
+    └── test_view_flows_audit.py # Async flow tests for view interactions
 ```
 
 ### Key Design Decisions
@@ -244,8 +258,9 @@ inu-bot/
 - **Facade pattern**: `ValorantAPI` in `utils/__init__.py` composes all services — cogs never call services directly
 - **Per-request auth**: `AuthResult` dataclass avoids race conditions in concurrent OAuth2 flows
 - **Asset prefetching**: Weapon skins are loaded on startup via `asyncio.gather()` for instant lookups
+- **Background refresh**: Asset cache refresh loop runs periodically after startup
 - **In-place updates**: Bot edits the original message instead of sending new ones, reducing chat clutter
-- **Timeout cleanup**: All views disable buttons automatically after timeout
+- **Timeout UX**: Shared `BaseView` disables components and notifies users when interactions expire
 - **Owner-only buttons**: `interaction_check` prevents other users from clicking your buttons
 
 ---

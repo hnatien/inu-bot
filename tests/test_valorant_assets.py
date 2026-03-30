@@ -134,6 +134,27 @@ class TestGetSkinDetails:
         result = await assets.get_skin_details("fail-uuid", session)
         assert result is None
 
+    async def test_cache_miss_does_not_fallback_to_fullrender(self):
+        assets = ValorantAssets()
+        session = FakeSession()
+        session.add("skinlevels/no-display-icon", FakeResponse(
+            json_data={
+                "status": 200,
+                "data": {
+                    "displayName": "Some Skin",
+                    "displayIcon": None,
+                    "fullRender": "https://example.com/fullrender.png",
+                    "contentTierUuid": "tier-uuid",
+                    "weapon": "Vandal",
+                },
+            },
+            status=200,
+        ))
+
+        result = await assets.get_skin_details("no-display-icon", session)
+        assert result is not None
+        assert result["icon"] is None
+
 
 class TestFetchAllData:
     async def test_populates_skin_map(self):
@@ -184,3 +205,49 @@ class TestFetchAllData:
         assert assets.skin_map["skin-1"]["weapon"] == "Vandal"
         assert "tier-1" in assets.rarity_map
         assert assets.rarity_map["tier-1"]["name"] == "Premium"
+
+    async def test_uses_chroma_icon_when_skin_display_icon_missing(self):
+        assets = ValorantAssets()
+        session = FakeSession()
+        session.add("valorant-api.com/v1/weapons", FakeResponse(
+            json_data={
+                "status": 200,
+                "data": [
+                    {
+                        "displayName": "Ghost",
+                        "skins": [
+                            {
+                                "uuid": "skin-ghost",
+                                "displayName": "Sovereign Ghost",
+                                "displayIcon": None,
+                                "fullRender": "https://example.com/fullrender.png",
+                                "contentTierUuid": "tier-1",
+                                "levels": [{"uuid": "level-ghost"}],
+                                "chromas": [
+                                    {
+                                        "uuid": "chroma-ghost",
+                                        "displayName": "Sovereign Ghost (Gold)",
+                                        "displayIcon": "https://example.com/chroma.png",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            },
+            status=200,
+        ))
+        session.add("valorant-api.com/v1/contenttiers", FakeResponse(
+            json_data={
+                "status": 200,
+                "data": [
+                    {"uuid": "tier-1", "devName": "Premium", "displayIcon": "https://example.com/tier.png"}
+                ],
+            },
+            status=200,
+        ))
+
+        await assets.fetch_all_data(session)
+
+        assert assets.skin_map["skin-ghost"]["icon"] == "https://example.com/chroma.png"
+        assert assets.skin_map["level-ghost"]["icon"] == "https://example.com/chroma.png"

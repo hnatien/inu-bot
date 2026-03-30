@@ -10,6 +10,7 @@ def manager():
     """UserManager with mocked MongoDB collection."""
     mgr = UserManager()
     mgr.collection = AsyncMock()
+    mgr.use_mongodb = True
     mock_result = MagicMock()
     mock_result.acknowledged = True
     mgr.collection.update_one.return_value = mock_result
@@ -26,11 +27,14 @@ class TestLinkUser:
         assert call_args[0][1] == {"$set": {"name": "TenZ", "tag": "SEN", "region": "na"}}
         assert call_args[1]["upsert"] is True
 
-    async def test_link_user_no_collection_returns_false(self):
+    async def test_link_user_no_collection_falls_back_to_json(self):
+        """Test that link_user falls back to JSON when no collection."""
         mgr = UserManager()
         mgr.collection = None
+        mgr.use_mongodb = False
         result = await mgr.link_user(12345, "TenZ", "SEN", "na")
-        assert result is False
+        assert result is True
+        assert mgr.json_data["12345"]["name"] == "TenZ"
 
 
 class TestGetUserLink:
@@ -57,6 +61,7 @@ class TestGetUserLink:
     async def test_no_collection(self):
         mgr = UserManager()
         mgr.collection = None
+        mgr.use_mongodb = False
         result = await mgr.get_user_link(12345)
         assert result is None
 
@@ -79,6 +84,7 @@ class TestUnlinkUser:
     async def test_unlink_no_collection(self):
         mgr = UserManager()
         mgr.collection = None
+        mgr.use_mongodb = False
         result = await mgr.unlink_user(12345)
         assert result is False
 
@@ -107,14 +113,18 @@ class TestLanguage:
     async def test_get_language_no_collection(self):
         mgr = UserManager()
         mgr.collection = None
+        mgr.use_mongodb = False
         result = await mgr.get_language(12345)
         assert result == "en"
 
     async def test_set_language_no_collection(self):
+        """Test that set_language falls back to JSON when no collection."""
         mgr = UserManager()
         mgr.collection = None
+        mgr.use_mongodb = False
         result = await mgr.set_language(12345, "vi")
-        assert result is False
+        assert result is True
+        assert mgr.json_data["12345"]["lang"] == "vi"
 
 
 class TestClose:

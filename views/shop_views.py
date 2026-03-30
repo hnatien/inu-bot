@@ -180,11 +180,8 @@ class ShopModal(discord.ui.Modal):
         price_text = f"{final_price:,} VP" if final_price > 0 else "N/A"
         if discount > 0 and final_price > 0:
             price_text += f" (-{discount}%)"
-            
-        if weapon_type:
-            embed.set_footer(text=f"{price_text} • {weapon_type}", icon_url=VP_ICON_URL)
-        else:
-            embed.set_footer(text=price_text, icon_url=VP_ICON_URL)
+
+        embed.set_footer(text=price_text, icon_url=VP_ICON_URL)
         return embed
 
 

@@ -80,7 +80,15 @@ class ValorantAssets:
                         for skin in weapon.get('skins', []):
                             skin_name = skin.get('displayName', 'Unknown Skin')
                             rarity_uuid = skin.get('contentTierUuid')
-                            skin_icon = skin.get('displayIcon') or skin.get('fullRender')
+                            # Use preview-friendly icons only to avoid distorted/cropped full renders in thumbnails.
+                            chromas = skin.get('chromas', [])
+                            fallback_chroma_icon = None
+                            for chroma in chromas:
+                                chroma_icon = chroma.get('displayIcon')
+                                if chroma_icon:
+                                    fallback_chroma_icon = chroma_icon
+                                    break
+                            skin_icon = skin.get('displayIcon') or fallback_chroma_icon
                             
                             skin_data = {
                                 'name': skin_name,
@@ -98,7 +106,7 @@ class ValorantAssets:
                                         'rarity': rarity_uuid,
                                         'weapon': weapon_name
                                     }
-                            for chroma in skin.get('chromas', []):
+                            for chroma in chromas:
                                 if chroma['uuid'] not in self.skin_map:
                                     self.skin_map[chroma['uuid']] = {
                                         'name': chroma.get('displayName') or skin_name,
@@ -134,7 +142,8 @@ class ValorantAssets:
                     if raw:
                         result = {
                             'name': raw.get('displayName', 'Unknown Skin'),
-                            'icon': raw.get('displayIcon') or raw.get('fullRender'),
+                            # Keep thumbnails on stable icon assets; fullRender often crops poorly in Discord.
+                            'icon': raw.get('displayIcon'),
                             'rarity': raw.get('contentTierUuid'),
                             'weapon': raw.get('weapon', '')
                         }

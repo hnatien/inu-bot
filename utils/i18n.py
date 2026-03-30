@@ -58,8 +58,8 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "Could not retrieve Daily Shop data from Riot.",
     },
     "shop_header": {
-        "vi": "> **Tài khoản:** `{account}`\n> **Làm mới sau:** `{time}`",
-        "en": "> **Account:** `{account}`\n> **Refreshes in:** `{time}`",
+        "vi": "**Tài khoản:** {account}\n**Làm mới sau:** {time}",
+        "en": "**Account:** {account}\n**Refreshes in:** {time}",
     },
     "shop_no_skins": {
         "vi": "Không tìm thấy skin nào trong Shop.",
@@ -70,8 +70,8 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "Night Market is currently unavailable or data could not be retrieved.",
     },
     "nm_header": {
-        "vi": "> **Tài khoản:** `{account}`\n> **Kết thúc sau:** `{time}`",
-        "en": "> **Account:** `{account}`\n> **Ends in:** `{time}`",
+        "vi": "**Tài khoản:** {account}\n**Kết thúc sau:** {time}",
+        "en": "**Account:** {account}\n**Ends in:** {time}",
     },
     "nm_no_skins": {
         "vi": "Không tìm thấy skin nào trong Night Market.",
