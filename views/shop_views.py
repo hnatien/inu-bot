@@ -7,8 +7,9 @@ from discord.ext import commands
 
 from utils import ValorantAPI
 from utils.riot_auth import AuthResult
-from utils.constants import VP_ICON_URL
+from utils.constants import VP_ICON_URL, EMBED_COLOR, ERROR_COLOR
 from utils.i18n import t, DEFAULT_LANG
+from views.base_views import BaseView
 
 logger = logging.getLogger('ShopViews')
 
@@ -31,12 +32,6 @@ class ShopModal(discord.ui.Modal):
         )
         self.add_item(self.url_input)
 
-    async def _resolve_region(self, auth: AuthResult) -> str:
-        acc_data = await self.api.get_account_info(auth.game_name, auth.tag_line)
-        if acc_data and acc_data.get('status') == 200:
-            return str(acc_data.get('data', {}).get('region', '')).lower() or self.api.region
-        return self.api.region
-
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
 
@@ -49,15 +44,22 @@ class ShopModal(discord.ui.Modal):
 
         success, message, auth = await self.api.auth_with_url(self.url_input.value, lang=self.lang)
         if not success or not auth:
-            error_embed = discord.Embed(description=message, color=0xff4444)
+            error_embed = discord.Embed(description=message, color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
             return
 
         # Show loading indicator
-        loading_embed = discord.Embed(description=f"**{t('shop_loading', self.lang)}**", color=0xFD4553)
+        loading_embed = discord.Embed(
+            description=(
+                f"🔄 **{t('shop_loading', self.lang)}**\n"
+                f"{t('shop_loading_hint', self.lang)}"
+            ),
+            color=EMBED_COLOR,
+        )
         await interaction.edit_original_response(embed=loading_embed)
 
-        region = await self._resolve_region(auth)
+        region = await self.api.resolve_region(auth)
+        self.context = None
 
         if self.mode == "shop":
             await self._handle_shop(interaction, auth, region)
@@ -67,7 +69,7 @@ class ShopModal(discord.ui.Modal):
     async def _handle_shop(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
         data = await self.api.get_shop(auth, region=region)
         if not data:
-            error_embed = discord.Embed(description=t('shop_error_no_data', self.lang), color=0xff4444)
+            error_embed = discord.Embed(description=t('shop_error_no_data', self.lang), color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
             return
 
@@ -82,7 +84,7 @@ class ShopModal(discord.ui.Modal):
         header = discord.Embed(
             title=t("title_daily_shop", self.lang),
             description=t("shop_header", self.lang, account=account, time=time_str),
-            color=0xfa4454
+            color=EMBED_COLOR
         )
         header.set_footer(text=t("footer", self.lang), icon_url=interaction.user.display_avatar.url)
         embeds = [header]
@@ -92,9 +94,11 @@ class ShopModal(discord.ui.Modal):
         for offer_id, details in zip(offers, results):
             if details:
                 embeds.append(self._create_skin_embed(details, 0, offer_id))
+            else:
+                logger.warning(f"Could not load skin details for shop offer: {offer_id}")
 
         if len(embeds) <= 1:
-            error_embed = discord.Embed(description=t('shop_no_skins', self.lang), color=0xff4444)
+            error_embed = discord.Embed(description=t('shop_no_skins', self.lang), color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
         else:
             await interaction.edit_original_response(embeds=embeds)
@@ -102,7 +106,7 @@ class ShopModal(discord.ui.Modal):
     async def _handle_nightmarket(self, interaction: discord.Interaction, auth: AuthResult, region: str) -> None:
         data = await self.api.get_nightmarket(auth, region=region)
         if not data:
-            error_embed = discord.Embed(description=t('nm_error_no_data', self.lang), color=0xff4444)
+            error_embed = discord.Embed(description=t('nm_error_no_data', self.lang), color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
             return
 
@@ -114,7 +118,7 @@ class ShopModal(discord.ui.Modal):
         header = discord.Embed(
             title=t("title_night_market", self.lang),
             description=t("nm_header", self.lang, account=account, time=time_str),
-            color=0xfa4454
+            color=EMBED_COLOR
         )
         header.set_footer(text=t("footer", self.lang), icon_url=interaction.user.display_avatar.url)
         embeds = [header]
@@ -134,9 +138,11 @@ class ShopModal(discord.ui.Modal):
         for (offer_id, discount), details in zip(offer_items, results):
             if details:
                 embeds.append(self._create_skin_embed(details, discount, offer_id))
+            else:
+                logger.warning(f"Could not load skin details for night market offer: {offer_id}")
 
         if len(embeds) <= 1:
-            error_embed = discord.Embed(description=t('nm_no_skins', self.lang), color=0xff4444)
+            error_embed = discord.Embed(description=t('nm_no_skins', self.lang), color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
         else:
             await interaction.edit_original_response(embeds=embeds)
@@ -144,6 +150,8 @@ class ShopModal(discord.ui.Modal):
     def _format_duration(self, seconds: int) -> str:
         if seconds <= 0:
             return t("shop_refreshing", self.lang)
+        if seconds < 60:
+            return "< 1m"
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         return f"{hours}h {minutes}m"
@@ -173,35 +181,27 @@ class ShopModal(discord.ui.Modal):
         if discount > 0 and final_price > 0:
             price_text += f" (-{discount}%)"
             
-        embed.set_footer(text=price_text, icon_url=VP_ICON_URL)
+        if weapon_type:
+            embed.set_footer(text=f"{price_text} • {weapon_type}", icon_url=VP_ICON_URL)
+        else:
+            embed.set_footer(text=price_text, icon_url=VP_ICON_URL)
         return embed
 
 
-class ShopView(discord.ui.View):
+class ShopView(BaseView):
     def __init__(self, api: ValorantAPI, auth_url: str, context: Union[discord.Interaction, commands.Context], mode: str = "shop", lang: str = DEFAULT_LANG) -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=300, lang=lang)
         self.api = api
         self.context = context
         self.mode = mode
         self.lang = lang
         self.owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
-        self.message: Optional[discord.Message] = None
 
         self.add_item(discord.ui.Button(label=t("btn_login", lang), style=discord.ButtonStyle.link, url=auth_url))
 
         self.auth_btn = discord.ui.Button(label=t("btn_paste", lang), style=discord.ButtonStyle.success)
         self.auth_btn.callback = self.open_shop_modal
         self.add_item(self.auth_btn)
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled') and not isinstance(item, discord.ui.Button) or (isinstance(item, discord.ui.Button) and item.style != discord.ButtonStyle.link):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

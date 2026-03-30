@@ -1,6 +1,7 @@
+import asyncio
 import logging
 import ssl
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 
 import aiohttp
 import certifi
@@ -20,12 +21,21 @@ class ValorantAPI:
     Composes specialized modules for Auth, Assets, and HenrikDev APIs.
     """
 
+    _ssl_ctx: Optional[ssl.SSLContext] = None
+
+    @classmethod
+    def _get_ssl_ctx(cls) -> ssl.SSLContext:
+        if cls._ssl_ctx is None:
+            cls._ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+        return cls._ssl_ctx
+
     def __init__(self) -> None:
         self.auth = RiotAuth()
         self.henrik = HenrikAPI()
         self.assets = ValorantAssets()
         self.user_manager = UserManager()
         self.session: Optional[aiohttp.ClientSession] = None
+        self._session_lock = asyncio.Lock()
 
     @property
     def region(self) -> str:
@@ -33,15 +43,29 @@ class ValorantAPI:
 
     async def init_session(self) -> aiohttp.ClientSession:
         """Initialize ClientSession and prefetch global data"""
-        if not self.session:
-            ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-            connector = aiohttp.TCPConnector(ssl=ssl_ctx)
-            self.session = aiohttp.ClientSession(connector=connector)
-
-            await self.user_manager.load()
-            await self.assets.load_price_data()
-            await self.assets.fetch_all_data(self.session)
+        async with self._session_lock:
+            if not self.session or self.session.closed:
+                connector = aiohttp.TCPConnector(ssl=self._get_ssl_ctx())
+                self.session = aiohttp.ClientSession(connector=connector)
+                await self.user_manager.load()
+                await self.assets.load_price_data()
+                try:
+                    await asyncio.wait_for(self.assets.fetch_all_data(self.session), timeout=30.0)
+                except asyncio.TimeoutError:
+                    logger.error("fetch_all_data() timed out after 30s — skin cache may be empty")
         return self.session
+
+    async def _refresh_loop(self) -> None:
+        """Refresh skin asset cache every 24 hours in the background."""
+        while True:
+            await asyncio.sleep(86400)
+            if self.session and not self.session.closed:
+                logger.info("Refreshing Valorant asset cache...")
+                try:
+                    await asyncio.wait_for(self.assets.fetch_all_data(self.session), timeout=30.0)
+                    logger.info("Asset cache refreshed successfully.")
+                except asyncio.TimeoutError:
+                    logger.error("Asset cache refresh timed out after 30s")
 
     async def close(self) -> None:
         if self.session:
@@ -98,7 +122,7 @@ class ValorantAPI:
         data = await self._get_storefront(auth, region)
         return data.get('BonusStore', {}) if data else None
 
-    async def get_inventory(self, auth: AuthResult, item_type: str, region: Optional[str] = None) -> list:
+    async def get_inventory(self, auth: AuthResult, item_type: str, region: Optional[str] = None) -> Optional[List]:
         """Fetch player-owned items by category from the entitlements endpoint."""
         if not self.session:
             await self.init_session()
@@ -141,7 +165,14 @@ class ValorantAPI:
                 logger.error(f"Inventory API Error {resp.status} for {url}: {error_text}")
         except Exception as e:
             logger.error(f"Failed to get inventory ({item_type}) at {url}: {e}")
-        return []
+        return None
+
+    async def resolve_region(self, auth: AuthResult) -> str:
+        """Resolve player region from account info, fallback to default region."""
+        acc_data = await self.get_account_info(auth.game_name, auth.tag_line)
+        if acc_data and acc_data.get('status') == 200:
+            return str(acc_data.get('data', {}).get('region', '')).lower() or self.region
+        return self.region
 
     async def get_skin_details(self, level_uuid: str) -> Optional[Dict[str, Any]]:
         if not self.session:

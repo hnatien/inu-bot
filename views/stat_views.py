@@ -1,22 +1,27 @@
 import asyncio
+import logging
+import math
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 from discord.ext import commands
 
 from utils import ValorantAPI
+from utils.constants import EMBED_COLOR, ERROR_COLOR
 from utils.i18n import t, DEFAULT_LANG
+from views.base_views import BaseView
+
+logger = logging.getLogger('StatViews')
 
 
-class PlayerStatsPagination(discord.ui.View):
+class PlayerStatsPagination(BaseView):
     def __init__(self, p_embed: discord.Embed, m_embed: discord.Embed, owner_id: int, lang: str = DEFAULT_LANG) -> None:
-        super().__init__(timeout=120)
+        super().__init__(timeout=120, lang=lang)
         self.p_embed = p_embed
         self.m_embed = m_embed
         self.current = 0
         self.owner_id = owner_id
         self.lang = lang
-        self.message: Optional[discord.Message] = None
 
         self.profile_btn = discord.ui.Button(label=t("btn_profile", lang), style=discord.ButtonStyle.primary)
         self.profile_btn.callback = self._show_profile
@@ -25,16 +30,6 @@ class PlayerStatsPagination(discord.ui.View):
         self.history_btn = discord.ui.Button(label=t("btn_match_history", lang), style=discord.ButtonStyle.secondary)
         self.history_btn.callback = self._show_history
         self.add_item(self.history_btn)
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled'):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
@@ -73,7 +68,13 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     is_interaction = isinstance(context, discord.Interaction)
     ref_msg = None
 
-    loading_embed = discord.Embed(description=f"**{t('stat_loading', lang)}**", color=0xFD4553)
+    loading_embed = discord.Embed(
+        description=(
+            f"🔄 **{t('stat_loading', lang)}**\n"
+            f"{t('shop_loading_hint', lang)}"
+        ),
+        color=EMBED_COLOR,
+    )
     if is_interaction:
         if not context.response.is_done():
             await context.response.defer()
@@ -113,7 +114,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
             error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
             error_embed = discord.Embed(
                 description=t('stat_error_account', lang, name=name, tag=tag, error=error_msg),
-                color=0xff4444
+                color=ERROR_COLOR
             )
             await update_response(embed=error_embed)
             return
@@ -139,7 +140,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
         error_embed = discord.Embed(
             description=t('stat_error_rank', lang, name=name, tag=tag, error=error_msg),
-            color=0xff4444
+            color=ERROR_COLOR
         )
         await update_response(embed=error_embed)
         return
@@ -155,20 +156,20 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     peak_tier = peak_data.get('tier', {})
     peak_rank = str(peak_tier.get('name', 'Unknown'))
     
+    rr_display = min(rr, 100)
     rank_lower = rank.lower()
     if "radiant" in rank_lower or "immortal" in rank_lower or "unrated" in rank_lower:
         progress_bar = f"**{rr} RR**"
     else:
-        bars = min(max(rr // 10, 0), 10)
-        progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr}/100 RR**"
-    
+        bars = min(max(rr_display // 10, 0), 10)
+        progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr_display}/100 RR**"
+
     desc_lines = f"**Rank:** {rank}\n{progress_bar}"
     if peak_rank.lower() not in ("unknown", "unrated"):
-        _, peak_icon = api.get_rank_assets(peak_rank)
         desc_lines += f"\n\n**Peak Rank:** {peak_rank}"
     
     profile_embed = discord.Embed(
-        title=f"{name}#{tag}",
+        title=f"📊 {name}#{tag}",
         description=desc_lines,
         color=rank_color
     )
@@ -178,11 +179,11 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     if card_wide:
         profile_embed.set_image(url=card_wide)
         
-    profile_embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url=rank_icon)
+    profile_embed.set_footer(text=t("footer", lang), icon_url=rank_icon)
     
     match_entries: List[Dict[str, Any]] = []
     if matches_data.get('status') == 200:
-        matches_list = matches_data.get('data', [])
+        matches_list = matches_data.get('data', [])[:5]
         for m in matches_list:
             if not isinstance(m, dict):
                 continue
@@ -213,50 +214,53 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
                 None
             )
             
-            if p:
-                st = p.get('stats', {})
-                if not isinstance(st, dict):
-                    st = {}
-                    
-                k = st.get('kills', 0)
-                d = st.get('deaths', 0)
-                a = st.get('assists', 0)
-                score = st.get('score', 0)
-                headshots = st.get('headshots', 0)
-                bodyshots = st.get('bodyshots', 0)
-                legshots = st.get('legshots', 0)
-                
-                total_shots = headshots + bodyshots + legshots
-                hs_pct = round((headshots / total_shots) * 100) if total_shots > 0 else 0
-                
-                try:
-                    acs = round(int(score) / int(rounds)) if int(rounds) > 0 else 0
-                except (ValueError, TypeError):
-                    acs = 0
-                
-                agent = str(p.get('character', 'Unknown'))
-                
-                team = str(p.get('team', 'Unknown')).lower()
-                teams_dict = m.get('teams', {})
-                
-                is_win = False
-                if isinstance(teams_dict, dict):
-                    team_data = teams_dict.get(team, {})
-                    if isinstance(team_data, dict):
-                        is_win = team_data.get('has_won', False)
-                
-                match_entries.append({
-                    'mode': mode,
-                    'map': map_name,
-                    'agent': agent,
-                    'is_win': is_win,
-                    'k': k, 'd': d, 'a': a,
-                    'acs': acs,
-                    'hs_pct': hs_pct
-                })
+            if p is None:
+                logger.warning(f"Player {name}#{tag} not found in match data for match on {map_name}")
+                continue
+
+            st = p.get('stats', {})
+            if not isinstance(st, dict):
+                st = {}
+
+            k = st.get('kills', 0)
+            d = st.get('deaths', 0)
+            a = st.get('assists', 0)
+            score = st.get('score', 0)
+            headshots = st.get('headshots', 0)
+            bodyshots = st.get('bodyshots', 0)
+            legshots = st.get('legshots', 0)
+
+            total_shots = headshots + bodyshots + legshots
+            hs_pct = math.floor((headshots / total_shots) * 100 + 0.5) if total_shots > 0 else 0
+
+            try:
+                acs = round(int(score) / int(rounds)) if int(rounds) > 0 else 0
+            except (ValueError, TypeError):
+                acs = 0
+
+            agent = str(p.get('character', 'Unknown'))
+
+            team = str(p.get('team', 'Unknown')).lower()
+            teams_dict = m.get('teams', {})
+
+            is_win = False
+            if isinstance(teams_dict, dict):
+                team_data = teams_dict.get(team, {})
+                if isinstance(team_data, dict):
+                    is_win = team_data.get('has_won', False)
+
+            match_entries.append({
+                'mode': mode,
+                'map': map_name,
+                'agent': agent,
+                'is_win': is_win,
+                'k': k, 'd': d, 'a': a,
+                'acs': acs,
+                'hs_pct': hs_pct
+            })
 
     matches_embed = discord.Embed(
-        title=t("title_match_history", lang, name=name, tag=tag),
+        title=f"📊 {t('title_match_history', lang, name=name, tag=tag)}",
         color=rank_color
     )
     matches_embed.set_thumbnail(url=rank_icon)
@@ -280,7 +284,7 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
             inline=False
         )
     
-    matches_embed.set_footer(text="Inu Bot • Powered by HenrikDev API", icon_url=rank_icon)
+    matches_embed.set_footer(text=t("footer", lang), icon_url=rank_icon)
 
     owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
 
@@ -334,27 +338,16 @@ class StatModal(discord.ui.Modal):
             await interaction.followup.send(msg, ephemeral=True)
 
 
-class StatView(discord.ui.View):
+class StatView(BaseView):
     def __init__(self, api: ValorantAPI, owner_id: int, lang: str = DEFAULT_LANG) -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=300, lang=lang)
         self.api = api
         self.owner_id = owner_id
         self.lang = lang
-        self.message: Optional[discord.Message] = None
 
         self.lookup_btn = discord.ui.Button(label=t("btn_lookup", lang), style=discord.ButtonStyle.primary)
         self.lookup_btn.callback = self._open_modal
         self.add_item(self.lookup_btn)
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled'):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

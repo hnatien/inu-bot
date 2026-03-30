@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -31,7 +32,8 @@ class ValorantBot(commands.Bot):
         await self.load_extension('cogs.info')
         
         await self.v_api.init_session()
-        
+        asyncio.ensure_future(self.v_api._refresh_loop())
+
         try:
             synced = await self.tree.sync()
             logger.info(f"Synced {len(synced)} command(s)")

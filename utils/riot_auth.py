@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import logging
@@ -5,12 +6,20 @@ import re
 import time
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
+from urllib.parse import urlparse
 
 import aiohttp
 
 from utils.i18n import t, DEFAULT_LANG
 
 logger = logging.getLogger('RiotAuth')
+
+_TOKEN_PATTERN = re.compile(r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+')
+
+
+def _sanitize_log(msg: str) -> str:
+    """Remove JWT tokens from log messages."""
+    return _TOKEN_PATTERN.sub('[REDACTED]', msg)
 
 
 @dataclass
@@ -44,6 +53,7 @@ class RiotAuth:
     def __init__(self) -> None:
         self._cached_version: Optional[str] = None
         self._version_fetched_at: float = 0.0
+        self._version_lock = asyncio.Lock()
 
     @staticmethod
     def get_auth_link() -> str:
@@ -56,14 +66,15 @@ class RiotAuth:
         )
 
     async def _get_client_version(self, session: aiohttp.ClientSession) -> str:
-        now = time.time()
-        if self._cached_version and (now - self._version_fetched_at) < self.VERSION_CACHE_TTL:
-            return self._cached_version
-        async with session.get("https://valorant-api.com/v1/version") as resp:
-            data = await resp.json()
-            self._cached_version = data['data']['riotClientVersion']
-            self._version_fetched_at = now
-            return self._cached_version
+        async with self._version_lock:
+            now = time.time()
+            if self._cached_version and (now - self._version_fetched_at) < self.VERSION_CACHE_TTL:
+                return self._cached_version
+            async with session.get("https://valorant-api.com/v1/version") as resp:
+                data = await resp.json()
+                self._cached_version = data['data']['riotClientVersion']
+                self._version_fetched_at = now
+                return self._cached_version
 
     async def auth_with_url(self, url: str, session: aiohttp.ClientSession, lang: str = DEFAULT_LANG) -> Tuple[bool, str, Optional[AuthResult]]:
         """Authenticate using the redirect URL. Returns per-request AuthResult to avoid race conditions."""
@@ -75,7 +86,8 @@ class RiotAuth:
             headers['X-Riot-ClientVersion'] = version
 
             # Validate URL is from Riot's official domain
-            if not re.match(r'https?://(playvalorant\.com|auth\.riotgames\.com)', url):
+            parsed_url = urlparse(url)
+            if parsed_url.hostname not in ('playvalorant.com', 'auth.riotgames.com'):
                 return False, t("auth_invalid_url", lang), None
 
             access_token_match = re.search(r'access_token=([^&]+)', url)
@@ -113,8 +125,5 @@ class RiotAuth:
                 return False, t("auth_no_user", lang), None
 
         except Exception as e:
-            error_msg = str(e)
-            if 'access_token' in error_msg.lower() or 'bearer' in error_msg.lower():
-                error_msg = "Authentication failed (details preserved for log)"
-            logger.error(f"Auth error: {error_msg}")
+            logger.error(f"Auth error: {_sanitize_log(str(e))}")
             return False, t("auth_system_error", lang), None

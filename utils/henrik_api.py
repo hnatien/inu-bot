@@ -35,7 +35,8 @@ class HenrikAPI:
                         return await resp.json()
                     elif resp.status == 429 or resp.status >= 500:
                         if attempt < max_retries:
-                            await asyncio.sleep(1.0 * (attempt + 1))
+                            retry_after = int(resp.headers.get('Retry-After', 2 ** attempt))
+                            await asyncio.sleep(min(retry_after, 60))
                             continue
                         logger.warning(f"HenrikDev API Error ({endpoint}): Status {resp.status} after {max_retries + 1} attempts")
                         return None
@@ -46,7 +47,7 @@ class HenrikAPI:
                         return None
             except Exception as e:
                 if attempt < max_retries:
-                    await asyncio.sleep(1.0 * (attempt + 1))
+                    await asyncio.sleep(min(2 ** attempt, 60))
                     continue
                 logger.error(f"HenrikDev API Exception ({endpoint}): {e}")
                 return None

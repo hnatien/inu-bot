@@ -5,10 +5,11 @@ from typing import Optional, Union, List
 
 from utils import ValorantAPI
 from utils.i18n import t
+from utils.constants import EMBED_COLOR
+from cogs import CogBase
+from views.base_views import BaseView
 
 BOT_VERSION = "1.1.0"
-
-EMBED_COLOR = 0xfa4454
 
 CHANGELOG: List[dict] = [
     {
@@ -57,24 +58,13 @@ SUPPORTED_LANGS = [
 ]
 
 
-class HelpView(discord.ui.View):
+class HelpView(BaseView):
     """Paginated help menu with category buttons."""
 
     def __init__(self, lang: str = "en", owner_id: int = 0) -> None:
-        super().__init__(timeout=120)
+        super().__init__(timeout=120, lang=lang)
         self.lang = lang
         self.owner_id = owner_id
-        self.message: Optional[discord.Message] = None
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled'):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.owner_id and interaction.user.id != self.owner_id:
@@ -89,7 +79,7 @@ class HelpView(discord.ui.View):
             description=t("help_stat_desc", self.lang),
             color=EMBED_COLOR,
         )
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Shop", style=discord.ButtonStyle.primary)
@@ -99,7 +89,7 @@ class HelpView(discord.ui.View):
             description=t("help_shop_desc", self.lang),
             color=EMBED_COLOR,
         )
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Inventory", style=discord.ButtonStyle.primary)
@@ -109,7 +99,7 @@ class HelpView(discord.ui.View):
             description=t("help_inv_desc", self.lang),
             color=EMBED_COLOR,
         )
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Misc", style=discord.ButtonStyle.secondary)
@@ -119,7 +109,7 @@ class HelpView(discord.ui.View):
             description=t("help_misc_desc", self.lang),
             color=EMBED_COLOR,
         )
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
 
@@ -156,15 +146,12 @@ def _build_update_embed(lang: str = "en") -> discord.Embed:
     return embed
 
 
-class InfoCog(commands.Cog):
+class InfoCog(CogBase):
     """Cog for help, update, and language commands."""
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.api: ValorantAPI = bot.v_api
-
-    async def _get_lang(self, user_id: int) -> str:
-        return await self.api.get_language(user_id)
 
     async def _send_help(self, context: Union[discord.Interaction, commands.Context]) -> None:
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id

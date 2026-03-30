@@ -91,7 +91,13 @@ class ValorantAssets:
                             self.skin_map[skin['uuid']] = skin_data
                             for level in skin.get('levels', []):
                                 if level['uuid'] not in self.skin_map:
-                                    self.skin_map[level['uuid']] = skin_data
+                                    level_icon = level.get('displayIcon') or skin_icon
+                                    self.skin_map[level['uuid']] = {
+                                        'name': skin_name,
+                                        'icon': level_icon,
+                                        'rarity': rarity_uuid,
+                                        'weapon': weapon_name
+                                    }
                             for chroma in skin.get('chromas', []):
                                 if chroma['uuid'] not in self.skin_map:
                                     self.skin_map[chroma['uuid']] = {
@@ -126,22 +132,28 @@ class ValorantAssets:
                     data = await resp.json()
                     raw = data.get('data')
                     if raw:
-                        return {
+                        result = {
                             'name': raw.get('displayName', 'Unknown Skin'),
-                            'icon': raw.get('displayIcon'),
+                            'icon': raw.get('displayIcon') or raw.get('fullRender'),
                             'rarity': raw.get('contentTierUuid'),
                             'weapon': raw.get('weapon', '')
                         }
+                        self.skin_map[level_uuid] = result
+                        return result
         except Exception as e:
             logger.error(f"Failed to get skin details for {level_uuid}: {e}")
         return None
 
     def get_rarity_info(self, rarity_uuid: Optional[str]) -> Dict[str, Any]:
         """Get color, name and standard price for a rarity"""
-        return self.rarity_data.get(
-            rarity_uuid or "",
-            {'name': 'Unknown', 'color': 0x2b2d31, 'gun_price': 0, 'melee_price': 0}
-        )
+        default = {'name': 'Unknown', 'color': 0x2b2d31, 'gun_price': 0, 'melee_price': 0}
+        if not rarity_uuid:
+            return default
+        info = self.rarity_data.get(rarity_uuid)
+        if info is None:
+            logger.debug(f"Unknown rarity UUID: {rarity_uuid}")
+            return default
+        return info
 
     def get_rarity_icon(self, rarity_uuid: Optional[str]) -> Optional[str]:
         """Get the display icon URL for a content tier"""

@@ -65,13 +65,14 @@ class TestShopModalSkinEmbed:
         modal.api.get_hardcoded_price.return_value = 1000
         details = {"name": "Skin", "icon": "https://icon.png", "rarity": "r", "weapon": "Vandal"}
         embed = modal._create_skin_embed(details, 30, "offer-id")
-        assert embed.description is not None
-        assert "30%" in embed.description
+        assert embed.footer.text is not None
+        assert "30%" in embed.footer.text
 
     def test_embed_no_discount(self, modal):
+        modal.api.get_hardcoded_price.return_value = 1000
         details = {"name": "Skin", "icon": None, "rarity": "r", "weapon": "Vandal"}
         embed = modal._create_skin_embed(details, 0, "offer-id")
-        assert embed.description == ""
+        assert "%" not in embed.footer.text
 
 
 class TestProcessAndSendStatsLogic:

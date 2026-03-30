@@ -64,3 +64,6 @@ ITEM_TYPE_IDS: Dict[str, str] = {
 }
 
 INVENTORY_ITEMS_PER_PAGE: int = 8
+
+EMBED_COLOR: int = 0xfa4454
+ERROR_COLOR: int = 0xe74c3c

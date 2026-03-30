@@ -6,24 +6,25 @@ from typing import Union, Optional
 from utils import ValorantAPI
 from utils.i18n import t
 from views.stat_views import StatView, process_and_send_stats
+from cogs import CogBase
 
-class StatsCog(commands.Cog):
+class StatsCog(CogBase):
     """Cog for Valorant player statistics and account linking."""
-    
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.api: ValorantAPI = bot.v_api
-
-    async def _get_lang(self, user_id: int) -> str:
-        return await self.api.get_language(user_id)
 
     @app_commands.command(name="link", description="Link your Discord account to a Valorant Riot ID")
     @app_commands.describe(name="Riot ID (e.g. TenZ)", tag="Tagline without # (e.g. SEN)")
     async def link(self, interaction: discord.Interaction, name: str, tag: str) -> None:
         """Links the user's Discord ID to a Riot ID."""
         lang = await self._get_lang(interaction.user.id)
+        if not (1 <= len(name) <= 16) or not (3 <= len(tag) <= 5):
+            await interaction.response.send_message(f"[Error] {t('link_invalid_id', lang)}", ephemeral=True)
+            return
         await interaction.response.defer(ephemeral=True)
-        
+
         acc_data = await self.api.get_account_info(name, tag)
         if not acc_data or acc_data.get('status') != 200:
             await interaction.followup.send(f"[Error] {t('link_not_found', lang, name=name, tag=tag)}", ephemeral=True)
@@ -62,6 +63,9 @@ class StatsCog(commands.Cog):
         lang = await self._get_lang(interaction.user.id)
         
         if name and tag:
+            if not (1 <= len(name) <= 16) or not (3 <= len(tag) <= 5):
+                await interaction.response.send_message(f"[Error] {t('link_invalid_id', lang)}", ephemeral=True)
+                return
             await interaction.response.defer()
             await process_and_send_stats(interaction, self.api, name, tag, lang=lang)
             return
@@ -97,7 +101,7 @@ class StatsCog(commands.Cog):
             color=0xFD4553
         )
         embed.set_thumbnail(url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
-        embed.set_footer(text="Inu Bot • Powered by HenrikDev API")
+        embed.set_footer(text=t("footer", lang))
 
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)

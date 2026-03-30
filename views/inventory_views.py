@@ -8,8 +8,9 @@ from discord.ext import commands
 
 from utils import ValorantAPI
 from utils.riot_auth import AuthResult
-from utils.constants import INVENTORY_ITEMS_PER_PAGE
+from utils.constants import INVENTORY_ITEMS_PER_PAGE, EMBED_COLOR, ERROR_COLOR
 from utils.i18n import t, DEFAULT_LANG
+from views.base_views import BaseView
 
 logger = logging.getLogger('InventoryViews')
 
@@ -18,7 +19,7 @@ CATEGORY_EMOJIS: Dict[str, str] = {
 }
 
 CATEGORY_COLORS: Dict[str, int] = {
-    "skins": 0xfa4454,
+    "skins": EMBED_COLOR,
 }
 
 
@@ -43,12 +44,6 @@ class InventoryModal(discord.ui.Modal):
         )
         self.add_item(self.url_input)
 
-    async def _resolve_region(self, auth: AuthResult) -> str:
-        acc_data = await self.api.get_account_info(auth.game_name, auth.tag_line)
-        if acc_data and acc_data.get("status") == 200:
-            return str(acc_data.get("data", {}).get("region", "")).lower() or self.api.region
-        return self.api.region
-
     async def on_submit(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=False)
 
@@ -63,16 +58,20 @@ class InventoryModal(discord.ui.Modal):
             self.url_input.value, lang=self.lang
         )
         if not success or not auth:
-            error_embed = discord.Embed(description=message, color=0xff4444)
+            error_embed = discord.Embed(description=message, color=ERROR_COLOR)
             await interaction.edit_original_response(embed=error_embed)
             return
 
-        region = await self._resolve_region(auth)
+        region = await self.api.resolve_region(auth)
+        self.context = None
 
         loading_embed = discord.Embed(
-            title="INVENTORY",
-            description=t("inv_loading", self.lang),
-            color=0xfa4454,
+            title=t("title_inventory", self.lang),
+            description=(
+                f"🔄 **{t('inv_loading', self.lang)}**\n"
+                f"{t('shop_loading_hint', self.lang)}"
+            ),
+            color=EMBED_COLOR,
         )
         loading_embed.set_footer(
             text=t("footer", self.lang),
@@ -88,6 +87,7 @@ class InventoryModal(discord.ui.Modal):
         
         item_ids = []
         final_region = region
+        all_failed = True
         
         for s in shards_to_try:
             logger.info(f"Trying inventory for region: {s}")
@@ -99,15 +99,25 @@ class InventoryModal(discord.ui.Modal):
             except asyncio.TimeoutError:
                 logger.warning(f"Inventory request timed out for region: {s}")
                 continue
-            if item_ids:
+            if item_ids is not None:
+                all_failed = False
                 final_region = s
                 break
 
+        if all_failed:
+            error_embed = discord.Embed(
+                title=t("title_inventory", self.lang),
+                description=t("inv_error_all_regions_failed", self.lang),
+                color=ERROR_COLOR,
+            )
+            await interaction.edit_original_response(embed=error_embed, view=None)
+            return
+
         if not item_ids:
             error_embed = discord.Embed(
-                title="INVENTORY",
+                title=t("title_inventory", self.lang),
                 description=t("inv_error_no_data", self.lang),
-                color=0xff4444,
+                color=ERROR_COLOR,
             )
             await interaction.edit_original_response(embed=error_embed, view=None)
             return
@@ -131,7 +141,13 @@ class InventoryModal(discord.ui.Modal):
             pass
 
     async def _resolve_skin_details(self, item_ids: List[str]) -> List[Dict[str, Any]]:
-        tasks = [self.api.get_skin_details(uid) for uid in item_ids]
+        sem = asyncio.Semaphore(10)
+
+        async def fetch_with_limit(uid: str):
+            async with sem:
+                return await self.api.get_skin_details(uid)
+
+        tasks = [fetch_with_limit(uid) for uid in item_ids]
         results = await asyncio.gather(*tasks)
 
         # Deduplicate by skin name to handle multiple levels/variants
@@ -186,7 +202,7 @@ class WeaponSelect(discord.ui.Select):
         await interaction.response.edit_message(embeds=view.build_page(), view=view)
 
 
-class InventoryPaginatorView(discord.ui.View):
+class InventoryPaginatorView(BaseView):
     def __init__(
         self,
         api: ValorantAPI,
@@ -197,7 +213,7 @@ class InventoryPaginatorView(discord.ui.View):
         interaction: discord.Interaction,
         lang: str = DEFAULT_LANG,
     ) -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=300, lang=lang)
         self.api = api
         self.auth = auth
         self.region = region
@@ -209,19 +225,8 @@ class InventoryPaginatorView(discord.ui.View):
         self.current_page = 0
         self.owner_id = interaction.user.id
         self._avatar_url = interaction.user.display_avatar.url
-        self.message: Optional[discord.Message] = None
 
         self._rebuild_components()
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled'):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     @property
     def total_pages(self) -> int:
@@ -355,7 +360,7 @@ class InventoryPaginatorView(discord.ui.View):
         return embed
 
 
-class InventoryIntroView(discord.ui.View):
+class InventoryIntroView(BaseView):
     def __init__(
         self,
         api: ValorantAPI,
@@ -363,7 +368,7 @@ class InventoryIntroView(discord.ui.View):
         context: Union[discord.Interaction, commands.Context],
         lang: str = DEFAULT_LANG,
     ) -> None:
-        super().__init__(timeout=300)
+        super().__init__(timeout=300, lang=lang)
         self.api = api
         self.context = context
         self.lang = lang
@@ -372,7 +377,6 @@ class InventoryIntroView(discord.ui.View):
             if isinstance(context, discord.Interaction)
             else context.author.id
         )
-        self.message: Optional[discord.Message] = None
 
         self.add_item(
             discord.ui.Button(
@@ -387,16 +391,6 @@ class InventoryIntroView(discord.ui.View):
         )
         self.auth_btn.callback = self._open_modal
         self.add_item(self.auth_btn)
-
-    async def on_timeout(self) -> None:
-        for item in self.children:
-            if hasattr(item, 'disabled') and not isinstance(item, discord.ui.Button) or (isinstance(item, discord.ui.Button) and item.style != discord.ButtonStyle.link):
-                item.disabled = True
-        if self.message:
-            try:
-                await self.message.edit(view=self)
-            except (discord.NotFound, discord.HTTPException):
-                pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:

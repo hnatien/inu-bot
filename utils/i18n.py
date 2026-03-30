@@ -82,12 +82,12 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "**Discount: {percent}%**",
     },
     "btn_login": {
-        "vi": "Đăng nhập Riot",
-        "en": "Sign in to Riot",
+        "vi": "🔑 Đăng nhập Riot",
+        "en": "🔑 Sign in to Riot",
     },
     "btn_paste": {
-        "vi": "Dán Link",
-        "en": "Paste Link",
+        "vi": "📋 Dán Link",
+        "en": "📋 Paste Link",
     },
     "footer": {
         "vi": "Inu Bot",
@@ -99,6 +99,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
             "1️⃣ Nhấn **Đăng nhập Riot** → đăng nhập tài khoản\n"
             "2️⃣ Sau khi chuyển hướng, **copy toàn bộ URL** trên thanh địa chỉ\n"
             "3️⃣ Nhấn **Dán Link** → paste URL vừa copy\n\n"
+            "⏱️ Nút sẽ hết hạn sau 5 phút, chạy lại lệnh nếu quá hạn.\n\n"
             "*Dùng `/safety` để tìm hiểu về bảo mật.*"
         ),
         "en": (
@@ -106,6 +107,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
             "1️⃣ Click **Sign in to Riot** → sign in to your account\n"
             "2️⃣ After redirect, **copy the entire URL** from the address bar\n"
             "3️⃣ Click **Paste Link** → paste the URL you copied\n\n"
+            "⏱️ Buttons expire after 5 minutes, run the command again when needed.\n\n"
             "*Use `/safety` to learn more about security.*"
         ),
     },
@@ -136,6 +138,10 @@ STRINGS: Dict[str, Dict[str, str]] = {
         ),
     },
 
+    "link_invalid_id": {
+        "vi": "Riot ID không hợp lệ. Tên 1-16 ký tự, tag 3-5 ký tự.",
+        "en": "Invalid Riot ID format. Name must be 1-16 chars, tag 3-5 chars.",
+    },
     "link_not_found": {
         "vi": "Không tìm thấy tài khoản **{name}#{tag}**. Kiểm tra lại nhé.",
         "en": "Could not find account **{name}#{tag}**. Please check again.",
@@ -165,6 +171,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "vi": (
             "> Truy vấn trực tiếp từ server Riot Games.\n"
             "Nhấn nút bên dưới để bắt đầu nhé.\n\n"
+            "⏱️ Nút tra cứu sẽ hết hạn sau 5 phút.\n\n"
             "**DỮ LIỆU BAO GỒM:**\n"
             "```yaml\n"
             "- Level, Rank & Rank Rating (RR)\n"
@@ -176,6 +183,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": (
             "> Directly retrieves data from Riot Games server.\n"
             "Please click the button below to start.\n\n"
+            "⏱️ The lookup button expires after 5 minutes.\n\n"
             "**AVAILABLE DATA INCLUDES:**\n"
             "```yaml\n"
             "- Profile Level, Rank & Rank Rating (RR)\n"
@@ -399,6 +407,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
             "1️⃣ Nhấn **Đăng nhập Riot** → đăng nhập tài khoản\n"
             "2️⃣ Sau khi chuyển hướng, **copy toàn bộ URL** trên thanh địa chỉ\n"
             "3️⃣ Nhấn **Dán Link** → paste URL vừa copy\n\n"
+            "⏱️ Nút sẽ hết hạn sau 5 phút, chạy lại lệnh nếu quá hạn.\n\n"
             "*Dùng `/safety` để tìm hiểu về bảo mật.*"
         ),
         "en": (
@@ -406,6 +415,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
             "1️⃣ Click **Sign in to Riot** → sign in to your account\n"
             "2️⃣ After redirect, **copy the entire URL** from the address bar\n"
             "3️⃣ Click **Paste Link** → paste the URL you copied\n\n"
+            "⏱️ Buttons expire after 5 minutes, run the command again when needed.\n\n"
             "*Use `/safety` to learn more about security.*"
         ),
     },
@@ -424,6 +434,10 @@ STRINGS: Dict[str, Dict[str, str]] = {
     "inv_error_no_data": {
         "vi": "Không lấy được dữ liệu Inventory từ Riot.",
         "en": "Could not retrieve Inventory data from Riot.",
+    },
+    "inv_error_all_regions_failed": {
+        "vi": "Kết nối tới Riot đang không ổn định ở mọi vùng. Vui lòng thử lại sau ít phút.",
+        "en": "Could not reach Riot inventory service in any region. Please try again in a few minutes.",
     },
     "inv_page": {
         "vi": "Trang {current}/{total}",
@@ -467,28 +481,28 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
 
     "title_daily_shop": {
-        "vi": "CỬA HÀNG HÀNG NGÀY",
-        "en": "DAILY SHOP",
+        "vi": "🛒 CỬA HÀNG HÀNG NGÀY",
+        "en": "🛒 DAILY SHOP",
     },
     "title_night_market": {
-        "vi": "CHỢ ĐÊM",
-        "en": "NIGHT MARKET",
+        "vi": "🌙 CHỢ ĐÊM",
+        "en": "🌙 NIGHT MARKET",
     },
     "title_valorant_tracker": {
-        "vi": "VALORANT TRACKER",
-        "en": "VALORANT TRACKER",
+        "vi": "📊 VALORANT TRACKER",
+        "en": "📊 VALORANT TRACKER",
     },
     "title_valorant_store": {
-        "vi": "CỬA HÀNG VALORANT",
-        "en": "VALORANT STORE",
+        "vi": "🛍️ CỬA HÀNG VALORANT",
+        "en": "🛍️ VALORANT STORE",
     },
     "title_match_history": {
         "vi": "LỊCH SỬ TRẬN ĐẤU — {name}#{tag}",
         "en": "MATCH HISTORY — {name}#{tag}",
     },
     "title_inventory": {
-        "vi": "KHO ĐỒ VALORANT",
-        "en": "VALORANT INVENTORY",
+        "vi": "🎒 KHO ĐỒ VALORANT",
+        "en": "🎒 VALORANT INVENTORY",
     },
     "no_data": {
         "vi": "Không có dữ liệu",
@@ -501,6 +515,14 @@ STRINGS: Dict[str, Dict[str, str]] = {
     "shop_loading": {
         "vi": "Đang tải...",
         "en": "Loading...",
+    },
+    "shop_loading_hint": {
+        "vi": "Thường mất 2-5 giây.",
+        "en": "Usually takes 2-5 seconds.",
+    },
+    "timeout_expired": {
+        "vi": "Phiên tương tác đã hết hạn. Hãy chạy lại lệnh để tiếp tục nhé.",
+        "en": "This interaction has expired. Please run the command again to continue.",
     },
     "shop_refreshing": {
         "vi": "Đang cập nhật...",

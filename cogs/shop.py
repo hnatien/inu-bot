@@ -7,18 +7,16 @@ import logging
 from utils import ValorantAPI
 from utils.i18n import t
 from views.shop_views import ShopView
+from cogs import CogBase
 
 logger = logging.getLogger('ShopCog')
 
-class ShopCog(commands.Cog):
+class ShopCog(CogBase):
     """Cog for Valorant Shop and Night Market."""
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.api: ValorantAPI = bot.v_api
-
-    async def _get_lang(self, user_id: int) -> str:
-        return await self.api.get_language(user_id)
 
     @app_commands.command(name="shop", description="View your Daily Shop")
     @app_commands.checks.cooldown(1, 15, key=lambda i: i.user.id)
@@ -47,7 +45,7 @@ class ShopCog(commands.Cog):
             description=t("safety_desc", lang),
             color=0xfa4454
         )
-        embed.set_footer(text="Inu Bot")
+        embed.set_footer(text=t("footer", lang))
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, ephemeral=True)

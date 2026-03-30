@@ -36,12 +36,12 @@ class UserManager:
         if self.collection is None:
             return False
 
-        await self.collection.update_one(
+        result = await self.collection.update_one(
             {"discord_id": str(discord_id)},
             {"$set": {"name": name, "tag": tag, "region": region}},
             upsert=True
         )
-        return True
+        return result.acknowledged
 
     async def get_user_link(self, discord_id: int) -> Optional[Tuple[str, str, Optional[str]]]:
         """Get the Riot ID, Tag, and Region for a Discord ID from MongoDB."""
@@ -72,12 +72,12 @@ class UserManager:
     async def set_language(self, discord_id: int, lang: str) -> bool:
         if self.collection is None:
             return False
-        await self.collection.update_one(
+        result = await self.collection.update_one(
             {"discord_id": str(discord_id)},
             {"$set": {"lang": lang}},
             upsert=True
         )
-        return True
+        return result.acknowledged
 
     async def close(self) -> None:
         """Close MongoDB connection."""

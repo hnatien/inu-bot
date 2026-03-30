@@ -10,6 +10,9 @@ def manager():
     """UserManager with mocked MongoDB collection."""
     mgr = UserManager()
     mgr.collection = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.acknowledged = True
+    mgr.collection.update_one.return_value = mock_result
     return mgr
 
 

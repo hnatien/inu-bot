@@ -139,11 +139,11 @@ class TestGetInventory:
         result = await api.get_inventory(auth, "skins", region="ap")
         assert result == ["fallback-1", "fallback-2"]
 
-    async def test_api_error_returns_empty(self, api):
+    async def test_api_error_returns_none(self, api):
         auth = AuthResult("puuid", "name", "tag", {"Authorization": "Bearer t"})
         api.session.add("pd.ap.a.pvp.net", FakeResponse(status=403, text="Forbidden"))
         result = await api.get_inventory(auth, "skins", region="ap")
-        assert result == []
+        assert result is None
 
 
 class TestStorefront:

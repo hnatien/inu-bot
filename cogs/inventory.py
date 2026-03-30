@@ -7,19 +7,17 @@ import logging
 from utils import ValorantAPI
 from utils.i18n import t
 from views.inventory_views import InventoryIntroView
+from cogs import CogBase
 
 logger = logging.getLogger('InventoryCog')
 
 
-class InventoryCog(commands.Cog):
+class InventoryCog(CogBase):
     """Cog for viewing player's Valorant inventory (owned skins, agents, etc.)."""
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.api: ValorantAPI = bot.v_api
-
-    async def _get_lang(self, user_id: int) -> str:
-        return await self.api.get_language(user_id)
 
     @app_commands.command(name="inventory", description="View your Valorant Inventory")
     @app_commands.checks.cooldown(1, 15, key=lambda i: i.user.id)
