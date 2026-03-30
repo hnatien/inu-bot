@@ -51,6 +51,7 @@ A feature-rich Discord bot for tracking Valorant player statistics, daily shop r
 ## Prerequisites
 
 - [Python 3.10+](https://www.python.org/downloads/)
+- [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/) (optional, for containerized deployment)
 - [Discord Bot Token](https://discord.com/developers/applications)
 - [HenrikDev API Key](https://docs.henrikdev.xyz/valorant.html)
 - [MongoDB Atlas](https://www.mongodb.com/atlas) (or local MongoDB instance)
@@ -98,6 +99,27 @@ Edit `.env` and fill in your actual values. See [Configuration](#%EF%B8%8F-confi
 
 ```bash
 python main.py
+```
+
+### Run with Docker (optional)
+
+```bash
+cp .env.example .env
+# fill in your real values in .env first
+docker compose up --build -d
+```
+
+Useful Docker commands:
+
+```bash
+# View logs
+docker compose logs -f inu-bot
+
+# Stop containers
+docker compose down
+
+# Rebuild after dependency/code changes
+docker compose up --build -d
 ```
 
 ---

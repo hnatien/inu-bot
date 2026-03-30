@@ -1,0 +1,9 @@
+services:
+  inu-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inu-bot
+    restart: unless-stopped
+    env_file:
+      - .env
