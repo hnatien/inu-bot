@@ -46,7 +46,8 @@ class ValorantAPI:
         async with self._session_lock:
             if not self.session or self.session.closed:
                 connector = aiohttp.TCPConnector(ssl=self._get_ssl_ctx())
-                self.session = aiohttp.ClientSession(connector=connector)
+                # Allow outbound API requests to use HTTP(S)_PROXY when present.
+                self.session = aiohttp.ClientSession(connector=connector, trust_env=True)
                 await self.user_manager.load()
                 await self.assets.load_price_data()
                 try:

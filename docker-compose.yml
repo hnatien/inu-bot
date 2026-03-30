@@ -5,5 +5,11 @@ services:
       dockerfile: Dockerfile
     container_name: inu-bot
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python main.py' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     env_file:
       - .env

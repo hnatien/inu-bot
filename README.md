@@ -122,6 +122,22 @@ docker compose down
 docker compose up --build -d
 ```
 
+### Hosting behind proxy (optional)
+
+If your host requires an outbound proxy, add these to `.env`:
+
+```bash
+HTTP_PROXY=http://username:password@proxy-host:port
+HTTPS_PROXY=http://username:password@proxy-host:port
+NO_PROXY=localhost,127.0.0.1
+```
+
+Then restart:
+
+```bash
+docker compose up --build -d
+```
+
 ---
 
 ## Testing
