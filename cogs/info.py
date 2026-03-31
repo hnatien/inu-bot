@@ -99,7 +99,7 @@ class HelpView(BaseView):
         style=discord.ButtonStyle.secondary,
         emoji=EMOJI_SHOP,
         custom_id="help:shop",
-        row=1
+        row=0
     )
     async def shop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
@@ -115,7 +115,7 @@ class HelpView(BaseView):
         style=discord.ButtonStyle.secondary,
         emoji=EMOJI_INVENTORY,
         custom_id="help:inventory",
-        row=2
+        row=0
     )
     async def inventory_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
@@ -131,7 +131,7 @@ class HelpView(BaseView):
         style=discord.ButtonStyle.secondary,
         emoji=EMOJI_MISC,
         custom_id="help:misc",
-        row=3
+        row=0
     )
     async def misc_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
@@ -143,26 +143,24 @@ class HelpView(BaseView):
         await interaction.response.edit_message(embed=embed, view=self)
 
 
-def _build_help_embed(lang: str = "en") -> discord.Embed:
+def _build_help_embed(lang: str = "en", bot: Optional[commands.Bot] = None) -> discord.Embed:
     embed = discord.Embed(
-        title=t("help_title", lang),
+        title="Inu Bot",
         description=t("help_desc", lang),
         color=0x2b2d31,  # Dark theme color
     )
+    
+    icon_url = bot.user.display_avatar.url if bot and bot.user else "https://media.discordapp.net/attachments/1101823838271701042/1101823868840428574/inu_bot_logo.png"
+    
     embed.set_author(
         name="Inu Bot",
-        icon_url="https://media.discordapp.net/attachments/1101823838271701042/1101823868840428574/inu_bot_logo.png"
+        icon_url=icon_url
     )
     embed.set_footer(text=f"Inu Bot v{BOT_VERSION}")
     
     cat_label = t('help_category_label', lang)
     
-    stat_text = f"**{t('help_stat_label', lang)}**\n{t('help_stat_sub', lang)}"
-    shop_text = f"**{t('help_shop_label', lang)}**\n{t('help_shop_sub', lang)}"
-    inv_text = f"**{t('help_inv_label', lang)}**\n{t('help_inv_sub', lang)}"
-    misc_text = f"**{t('help_misc_label', lang)}**\n{t('help_misc_sub', lang)}"
-    
-    embed.add_field(name=f"\n{cat_label}", value="\u200b", inline=False)
+    embed.add_field(name=f"**{cat_label}**", value="\u200b", inline=False)
     embed.add_field(name=f"{EMOJI_STAT} {t('help_stat_label', lang)}", value=t('help_stat_sub', lang), inline=False)
     embed.add_field(name=f"{EMOJI_SHOP} {t('help_shop_label', lang)}", value=t('help_shop_sub', lang), inline=False)
     embed.add_field(name=f"{EMOJI_INVENTORY} {t('help_inv_label', lang)}", value=t('help_inv_sub', lang), inline=False)
@@ -204,7 +202,7 @@ class InfoCog(CogBase):
     async def _send_help(self, context: Union[discord.Interaction, commands.Context]) -> None:
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         lang = await self._get_lang(user_id)
-        embed = _build_help_embed(lang)
+        embed = _build_help_embed(lang, self.bot)
         view = HelpView(lang, owner_id=user_id)
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view, ephemeral=True)

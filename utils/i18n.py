@@ -233,14 +233,8 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "Inu Bot",
     },
     "help_desc": {
-        "vi": (
-            "v1.1.0 · Valorant companion\n\n"
-            "Tra cứu stat, Daily Shop, Night Market và Inventory của bạn."
-        ),
-        "en": (
-            "v1.1.0 · Valorant companion\n\n"
-            "Track stats, Daily Shop, Night Market and your Inventory."
-        ),
+        "vi": "Tra cứu stat, Daily Shop, Night Market và Inventory của bạn.",
+        "en": "Track stats, Daily Shop, Night Market and your Inventory.",
     },
     "help_category_label": {
         "vi": "DANH MỤC",
