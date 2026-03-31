@@ -5,7 +5,13 @@ from typing import Optional, Union, List
 
 from utils import ValorantAPI
 from utils.i18n import t
-from utils.constants import EMBED_COLOR
+from utils.constants import (
+    EMBED_COLOR,
+    EMOJI_STAT,
+    EMOJI_SHOP,
+    EMOJI_INVENTORY,
+    EMOJI_MISC
+)
 from cogs import CogBase
 from views.base_views import BaseView
 
@@ -59,7 +65,7 @@ SUPPORTED_LANGS = [
 
 
 class HelpView(BaseView):
-    """Paginated help menu with category buttons."""
+    """Refactored help menu with modern vertical buttons."""
 
     def __init__(self, lang: str = "en", owner_id: int = 0) -> None:
         super().__init__(timeout=120, lang=lang)
@@ -72,7 +78,13 @@ class HelpView(BaseView):
             return False
         return True
 
-    @discord.ui.button(label="Stat", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="Stat",
+        style=discord.ButtonStyle.secondary,
+        emoji=EMOJI_STAT,
+        custom_id="help:stat",
+        row=0
+    )
     async def stats_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title=t("help_stat_title", self.lang),
@@ -82,7 +94,13 @@ class HelpView(BaseView):
         embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Shop", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="Shop",
+        style=discord.ButtonStyle.secondary,
+        emoji=EMOJI_SHOP,
+        custom_id="help:shop",
+        row=1
+    )
     async def shop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title=t("help_shop_title", self.lang),
@@ -92,7 +110,13 @@ class HelpView(BaseView):
         embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Inventory", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="Inventory",
+        style=discord.ButtonStyle.secondary,
+        emoji=EMOJI_INVENTORY,
+        custom_id="help:inventory",
+        row=2
+    )
     async def inventory_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title=t("help_inv_title", self.lang),
@@ -102,7 +126,13 @@ class HelpView(BaseView):
         embed.set_footer(text=t("footer", self.lang))
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Misc", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(
+        label="Misc",
+        style=discord.ButtonStyle.secondary,
+        emoji=EMOJI_MISC,
+        custom_id="help:misc",
+        row=3
+    )
     async def misc_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         embed = discord.Embed(
             title=t("help_misc_title", self.lang),
@@ -117,9 +147,27 @@ def _build_help_embed(lang: str = "en") -> discord.Embed:
     embed = discord.Embed(
         title=t("help_title", lang),
         description=t("help_desc", lang),
-        color=EMBED_COLOR,
+        color=0x2b2d31,  # Dark theme color
+    )
+    embed.set_author(
+        name="Inu Bot",
+        icon_url="https://media.discordapp.net/attachments/1101823838271701042/1101823868840428574/inu_bot_logo.png"
     )
     embed.set_footer(text=f"Inu Bot v{BOT_VERSION}")
+    
+    cat_label = t('help_category_label', lang)
+    
+    stat_text = f"**{t('help_stat_label', lang)}**\n{t('help_stat_sub', lang)}"
+    shop_text = f"**{t('help_shop_label', lang)}**\n{t('help_shop_sub', lang)}"
+    inv_text = f"**{t('help_inv_label', lang)}**\n{t('help_inv_sub', lang)}"
+    misc_text = f"**{t('help_misc_label', lang)}**\n{t('help_misc_sub', lang)}"
+    
+    embed.add_field(name=f"\n{cat_label}", value="\u200b", inline=False)
+    embed.add_field(name=f"{EMOJI_STAT} {t('help_stat_label', lang)}", value=t('help_stat_sub', lang), inline=False)
+    embed.add_field(name=f"{EMOJI_SHOP} {t('help_shop_label', lang)}", value=t('help_shop_sub', lang), inline=False)
+    embed.add_field(name=f"{EMOJI_INVENTORY} {t('help_inv_label', lang)}", value=t('help_inv_sub', lang), inline=False)
+    embed.add_field(name=f"{EMOJI_MISC} {t('help_misc_label', lang)}", value=t('help_misc_sub', lang), inline=False)
+
     return embed
 
 

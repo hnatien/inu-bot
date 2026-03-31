@@ -229,32 +229,54 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
 
     "help_title": {
-        "vi": "HƯỚNG DẪN SỬ DỤNG",
-        "en": "USER GUIDE",
+        "vi": "Inu Bot",
+        "en": "Inu Bot",
     },
     "help_desc": {
         "vi": (
-            "Inu Bot giúp bạn tra cứu stat Valorant, "
-            "xem Daily Shop, Night Market và Inventory.\n\n"
-            "Chọn một mục bên dưới để xem chi tiết.\n\n"
-            "```\n"
-            "Stat        Rank, RR, lịch sử trận đấu\n"
-            "Shop        Cửa hàng, Night Market\n"
-            "Inventory   Kho đồ skin súng của bạn\n"
-            "Misc        Prefix, hỗ trợ, cập nhật\n"
-            "```"
+            "v1.1.0 · Valorant companion\n\n"
+            "Tra cứu stat, Daily Shop, Night Market và Inventory của bạn."
         ),
         "en": (
-            "Inu Bot helps you look up Valorant stats, "
-            "view your Daily Shop, Night Market and Inventory.\n\n"
-            "Select a category below for details.\n\n"
-            "```\n"
-            "Stat        Rank, RR, match history lookup\n"
-            "Shop        Daily shop, night market viewer\n"
-            "Inventory   Your gun skins collection\n"
-            "Misc        Prefix, support, updates\n"
-            "```"
+            "v1.1.0 · Valorant companion\n\n"
+            "Track stats, Daily Shop, Night Market and your Inventory."
         ),
+    },
+    "help_category_label": {
+        "vi": "DANH MỤC",
+        "en": "CATEGORIES",
+    },
+    "help_stat_label": {
+        "vi": "Stat",
+        "en": "Stat",
+    },
+    "help_stat_sub": {
+        "vi": "Rank, RR, lịch sử trận đấu",
+        "en": "Rank, RR, match history",
+    },
+    "help_shop_label": {
+        "vi": "Shop",
+        "en": "Shop",
+    },
+    "help_shop_sub": {
+        "vi": "Daily Shop · Night Market",
+        "en": "Daily Shop · Night Market",
+    },
+    "help_inv_label": {
+        "vi": "Inventory",
+        "en": "Inventory",
+    },
+    "help_inv_sub": {
+        "vi": "Kho skin súng của bạn",
+        "en": "Your gun skin collection",
+    },
+    "help_misc_label": {
+        "vi": "Misc",
+        "en": "Misc",
+    },
+    "help_misc_sub": {
+        "vi": "Prefix, hỗ trợ, cập nhật",
+        "en": "Prefix, support, updates",
     },
     "help_stat_title": {
         "vi": "HƯỚNG DẪN — STAT",
