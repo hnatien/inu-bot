@@ -65,7 +65,7 @@ class TestBaseView:
 
         assert btn.disabled is True
         msg.edit.assert_awaited_once()
-        msg.reply.assert_awaited_once()
+        msg.reply.assert_not_awaited()
 
 
 class TestFacadeCoverage:

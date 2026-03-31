@@ -20,9 +20,5 @@ class BaseView(discord.ui.View):
         if self.message:
             try:
                 await self.message.edit(view=self)
-                await self.message.reply(
-                    t("timeout_expired", self.lang),
-                    mention_author=False,
-                )
             except (discord.NotFound, discord.HTTPException):
                 pass
