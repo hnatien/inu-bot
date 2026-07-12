@@ -11,6 +11,7 @@ from utils.henrik_api import HenrikAPI
 from utils.valorant_assets import ValorantAssets
 from utils.user_manager import UserManager
 from utils.constants import RANK_TIERS, RANK_ICON_BASE, DEFAULT_RANK_ICON, ITEM_TYPE_IDS
+from utils.i18n import DEFAULT_LANG
 
 logger = logging.getLogger('ValorantAPI')
 
@@ -77,7 +78,7 @@ class ValorantAPI:
     def get_auth_link(self) -> str:
         return self.auth.get_auth_link()
 
-    async def auth_with_url(self, url: str, lang: str = "en") -> Tuple[bool, str, Optional[AuthResult]]:
+    async def auth_with_url(self, url: str, lang: str = DEFAULT_LANG) -> Tuple[bool, str, Optional[AuthResult]]:
         if not self.session:
             await self.init_session()
         return await self.auth.auth_with_url(url, self.session, lang=lang)

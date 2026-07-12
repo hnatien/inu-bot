@@ -4,20 +4,31 @@ from discord import app_commands
 from typing import Optional, Union, List
 
 from utils import ValorantAPI
-from utils.i18n import t
-from utils.constants import (
-    EMBED_COLOR,
-    EMOJI_STAT,
-    EMOJI_SHOP,
-    EMOJI_INVENTORY,
-    EMOJI_MISC
-)
+from utils.i18n import DEFAULT_LANG, t
 from cogs import CogBase
 from views.base_views import BaseView
 
-BOT_VERSION = "1.1.0"
+BOT_VERSION = "1.2.0"
 
 CHANGELOG: List[dict] = [
+    {
+        "version": "1.2.0",
+        "date": "2026-07-12",
+        "changes_vi": [
+            "Thiết kế lại /help theo hướng đơn giản, dễ tra cứu",
+            "Làm mới giao diện Daily Shop và quy trình đăng nhập Riot",
+            "Chuẩn hóa các màn loading, loại bỏ chi tiết dư thừa",
+            "Cải thiện bố cục hồ sơ rank và lịch sử trận đấu",
+            "Bỏ màu embed trên các màn, trừ màu rank trong Stat",
+        ],
+        "changes_en": [
+            "Redesigned /help for simpler navigation",
+            "Refined the Daily Shop UI and Riot sign-in flow",
+            "Standardized loading screens and removed visual clutter",
+            "Improved rank profile and match history layouts",
+            "Removed embed colors except rank colors in Stats",
+        ],
+    },
     {
         "version": "1.1.0",
         "date": "2026-02-27",
@@ -65,12 +76,21 @@ SUPPORTED_LANGS = [
 
 
 class HelpView(BaseView):
-    """Refactored help menu with modern vertical buttons."""
+    """Category navigation for the help menu."""
 
-    def __init__(self, lang: str = "en", owner_id: int = 0) -> None:
+    def __init__(self, lang: str = DEFAULT_LANG, owner_id: int = 0) -> None:
         super().__init__(timeout=120, lang=lang)
         self.lang = lang
         self.owner_id = owner_id
+        labels = {
+            "help:stat": t("help_stat_label", lang),
+            "help:shop": t("help_shop_label", lang),
+            "help:inventory": t("help_inv_label", lang),
+            "help:misc": t("help_misc_label", lang),
+        }
+        for item in self.children:
+            if isinstance(item, discord.ui.Button) and item.custom_id in labels:
+                item.label = labels[item.custom_id]
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.owner_id and interaction.user.id != self.owner_id:
@@ -81,7 +101,6 @@ class HelpView(BaseView):
     @discord.ui.button(
         label="Stat",
         style=discord.ButtonStyle.secondary,
-        emoji=EMOJI_STAT,
         custom_id="help:stat",
         row=0
     )
@@ -89,15 +108,14 @@ class HelpView(BaseView):
         embed = discord.Embed(
             title=t("help_stat_title", self.lang),
             description=t("help_stat_desc", self.lang),
-            color=EMBED_COLOR,
         )
         embed.set_footer(text=t("footer", self.lang))
+        self._set_active_button("help:stat")
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(
         label="Shop",
         style=discord.ButtonStyle.secondary,
-        emoji=EMOJI_SHOP,
         custom_id="help:shop",
         row=0
     )
@@ -105,15 +123,14 @@ class HelpView(BaseView):
         embed = discord.Embed(
             title=t("help_shop_title", self.lang),
             description=t("help_shop_desc", self.lang),
-            color=EMBED_COLOR,
         )
         embed.set_footer(text=t("footer", self.lang))
+        self._set_active_button("help:shop")
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(
         label="Inventory",
         style=discord.ButtonStyle.secondary,
-        emoji=EMOJI_INVENTORY,
         custom_id="help:inventory",
         row=0
     )
@@ -121,15 +138,14 @@ class HelpView(BaseView):
         embed = discord.Embed(
             title=t("help_inv_title", self.lang),
             description=t("help_inv_desc", self.lang),
-            color=EMBED_COLOR,
         )
         embed.set_footer(text=t("footer", self.lang))
+        self._set_active_button("help:inventory")
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(
         label="Misc",
         style=discord.ButtonStyle.secondary,
-        emoji=EMOJI_MISC,
         custom_id="help:misc",
         row=0
     )
@@ -137,39 +153,37 @@ class HelpView(BaseView):
         embed = discord.Embed(
             title=t("help_misc_title", self.lang),
             description=t("help_misc_desc", self.lang),
-            color=EMBED_COLOR,
         )
         embed.set_footer(text=t("footer", self.lang))
+        self._set_active_button("help:misc")
         await interaction.response.edit_message(embed=embed, view=self)
 
+    def _set_active_button(self, custom_id: str) -> None:
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                item.style = (
+                    discord.ButtonStyle.primary
+                    if item.custom_id == custom_id
+                    else discord.ButtonStyle.secondary
+                )
 
-def _build_help_embed(lang: str = "en", bot: Optional[commands.Bot] = None) -> discord.Embed:
+
+def _build_help_embed(lang: str = DEFAULT_LANG, bot: Optional[commands.Bot] = None) -> discord.Embed:
     embed = discord.Embed(
-        title="Inu Bot",
+        title=t("help_title", lang),
         description=t("help_desc", lang),
-        color=0x2b2d31,  # Dark theme color
-    )
-    
-    icon_url = bot.user.display_avatar.url if bot and bot.user else "https://media.discordapp.net/attachments/1101823838271701042/1101823868840428574/inu_bot_logo.png"
-    
-    embed.set_author(
-        name="Inu Bot",
-        icon_url=icon_url
     )
     embed.set_footer(text=f"Inu Bot v{BOT_VERSION}")
-    
-    cat_label = t('help_category_label', lang)
-    
-    embed.add_field(name=f"**{cat_label}**", value="\u200b", inline=False)
-    embed.add_field(name=f"{EMOJI_STAT} {t('help_stat_label', lang)}", value=t('help_stat_sub', lang), inline=False)
-    embed.add_field(name=f"{EMOJI_SHOP} {t('help_shop_label', lang)}", value=t('help_shop_sub', lang), inline=False)
-    embed.add_field(name=f"{EMOJI_INVENTORY} {t('help_inv_label', lang)}", value=t('help_inv_sub', lang), inline=False)
-    embed.add_field(name=f"{EMOJI_MISC} {t('help_misc_label', lang)}", value=t('help_misc_sub', lang), inline=False)
+
+    embed.add_field(name=t('help_stat_label', lang), value=t('help_stat_sub', lang), inline=False)
+    embed.add_field(name=t('help_shop_label', lang), value=t('help_shop_sub', lang), inline=False)
+    embed.add_field(name=t('help_inv_label', lang), value=t('help_inv_sub', lang), inline=False)
+    embed.add_field(name=t('help_misc_label', lang), value=t('help_misc_sub', lang), inline=False)
 
     return embed
 
 
-def _build_update_embed(lang: str = "en") -> discord.Embed:
+def _build_update_embed(lang: str = DEFAULT_LANG) -> discord.Embed:
     entries = CHANGELOG[:MAX_CHANGELOG_ENTRIES]
     description_parts: list[str] = []
 
@@ -186,7 +200,6 @@ def _build_update_embed(lang: str = "en") -> discord.Embed:
     embed = discord.Embed(
         title=t("update_title", lang),
         description=description,
-        color=EMBED_COLOR,
     )
     embed.set_footer(text=f"Inu Bot v{BOT_VERSION}")
     return embed

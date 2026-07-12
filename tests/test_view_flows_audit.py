@@ -89,6 +89,31 @@ class TestStatViewFlows:
 
         interaction.response.defer.assert_awaited_once()
         assert interaction.edit_original_response.await_count >= 2
+        loading_embed = interaction.edit_original_response.await_args_list[0].kwargs["embed"]
+        assert loading_embed.title == "Looking up player"
+        assert loading_embed.description == "Please wait a moment."
+        assert loading_embed.color is None
+        assert loading_embed.footer.text is None
+        profile_embed = interaction.edit_original_response.await_args_list[-1].kwargs["embed"]
+        assert profile_embed.author.name == "TenZ#SEN"
+        assert profile_embed.title == "Gold 2"
+        assert "67/100 RR" in profile_embed.description
+        assert [field.name for field in profile_embed.fields] == ["Level", "Region", "Peak rank"]
+        assert [field.value for field in profile_embed.fields] == ["100", "AP", "Platinum 1"]
+        assert profile_embed.author.icon_url == "https://card.s"
+        assert profile_embed.thumbnail.url == "https://rank.icon"
+        assert profile_embed.image.url == "https://card.l"
+        assert profile_embed.footer.text is None
+        pagination = interaction.edit_original_response.await_args_list[-1].kwargs["view"]
+        history_embed = pagination.m_embed
+        assert history_embed.title == "Match history"
+        assert history_embed.description == "TenZ#SEN · 5 most recent matches"
+        assert history_embed.fields[0].name == "Win · Competitive — Ascent"
+        assert history_embed.fields[0].value == (
+            "```\nJett\nK/D/A 20/10/5  ·  ACS 208  ·  HS 29%\n```"
+        )
+        assert history_embed.thumbnail.url == "https://rank.icon"
+        assert history_embed.footer.text is None
 
     async def test_process_stats_account_error(self, api_mock, monkeypatch):
         monkeypatch.setattr("views.stat_views.discord.Interaction", DummyInteraction)
@@ -124,8 +149,14 @@ class TestShopViewFlows:
         api_mock.auth_with_url = AsyncMock(return_value=(True, "ok", SimpleNamespace(game_name="TenZ", tag_line="SEN", puuid="p", headers={})))
         api_mock.resolve_region = AsyncMock(return_value="ap")
         modal._handle_shop = AsyncMock()
+        interaction.edit_original_response.reset_mock()
         await modal.on_submit(interaction)
         modal._handle_shop.assert_awaited_once()
+        loading_embed = interaction.edit_original_response.await_args.kwargs["embed"]
+        assert loading_embed.title == "Loading shop"
+        assert loading_embed.description == "Please wait a moment."
+        assert loading_embed.color is None
+        assert loading_embed.footer.text is None
 
     async def test_handle_shop_success_and_no_data(self, api_mock):
         modal = ShopModal.__new__(ShopModal)
@@ -182,6 +213,11 @@ class TestInventoryViewFlows:
 
         await modal.on_submit(interaction)
         interaction.edit_original_response.assert_awaited()
+        loading_embed = interaction.edit_original_response.await_args_list[0].kwargs["embed"]
+        assert loading_embed.title == "Loading inventory"
+        assert loading_embed.description == "Please wait a moment."
+        assert loading_embed.color is None
+        assert loading_embed.footer.text is None
 
     async def test_inventory_modal_submit_all_failed_and_empty(self, api_mock):
         context = DummyInteraction(user_id=22)

@@ -3,18 +3,22 @@ from utils.i18n import t, STRINGS, DEFAULT_LANG
 
 
 class TestDefaultLang:
-    def test_default_lang_is_en(self):
-        assert DEFAULT_LANG == "en"
+    def test_default_lang_is_vi(self):
+        assert DEFAULT_LANG == "vi"
 
 
 class TestTranslationLookup:
-    def test_returns_english_by_default(self):
+    def test_returns_vietnamese_by_default(self):
         result = t("button_denied")
-        assert result == "You cannot use this button."
+        assert "không phải của bạn" in result
 
     def test_returns_vietnamese(self):
         result = t("button_denied", "vi")
         assert "không phải của bạn" in result
+
+    def test_returns_english(self):
+        result = t("button_denied", "en")
+        assert result == "You cannot use this button."
 
     def test_unknown_key_returns_key(self):
         result = t("nonexistent_key_xyz", "en")
@@ -22,7 +26,7 @@ class TestTranslationLookup:
 
     def test_unknown_lang_falls_back_to_default(self):
         result = t("button_denied", "jp")
-        assert result == STRINGS["button_denied"]["en"]
+        assert result == STRINGS["button_denied"]["vi"]
 
 
 class TestTemplateSubstitution:
@@ -38,6 +42,20 @@ class TestTemplateSubstitution:
     def test_vi_template_substitution(self):
         result = t("link_success", "vi", name="TenZ", tag="SEN")
         assert "TenZ#SEN" in result
+
+    def test_daily_shop_intro_uses_clear_action_labels(self):
+        result = t("shop_intro", "vi", mode=t("mode_daily_shop", "vi"))
+
+        assert result.startswith("Đăng nhập Riot để xem cửa hàng hôm nay của bạn.")
+        assert "**Cách thực hiện**" in result
+        assert "Đăng nhập Riot" in result
+        assert "Dán URL" in result
+        assert "không lưu mật khẩu" in result
+        assert "1️⃣" not in result
+
+    def test_daily_shop_title_is_simple_and_consistent(self):
+        assert t("title_daily_shop", "vi") == "Daily Shop"
+        assert t("title_daily_shop", "en") == "Daily Shop"
 
 
 class TestAllStringsHaveBothLanguages:
@@ -55,8 +73,10 @@ class TestStringKeysUsedInCode:
     """Spot-check that important keys exist and produce non-empty strings."""
 
     IMPORTANT_KEYS = [
-        "stat_loading", "shop_loading", "btn_profile", "btn_match_history",
-        "btn_lookup", "btn_login", "btn_paste", "footer",
+        "stat_loading", "shop_loading", "loading_hint", "stat_level", "stat_region",
+        "stat_peak_rank", "stat_match_history_desc", "stat_win", "stat_loss",
+        "btn_profile", "btn_match_history",
+        "btn_lookup", "btn_login", "btn_paste", "footer", "shop_session_footer",
         "title_daily_shop", "title_night_market", "title_inventory",
         "stat_modal_title", "stat_modal_name", "stat_modal_tag",
         "shop_modal_title", "nm_modal_title", "inv_modal_title",

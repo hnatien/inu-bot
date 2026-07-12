@@ -122,8 +122,15 @@ class TestInfoCog:
     async def test_build_help_update_embed(self):
         e1 = _build_help_embed("en")
         e2 = _build_update_embed("en")
-        assert e1.title
+        assert e1.title == "Help"
+        assert len(e1.fields) == 4
+        assert all(field.inline is False for field in e1.fields)
+        assert e1.color is None
+        assert e1.author.name is None
         assert e2.title
+        assert e2.description.startswith("**v1.2.0** — 2026-07-12")
+        assert "Improved rank profile and match history layouts" in e2.description
+        assert e2.footer.text == "Inu Bot v1.2.0"
         assert "v" in (e2.description or "")
 
     async def test_help_view_owner_check_denied(self):
@@ -134,12 +141,20 @@ class TestInfoCog:
         interaction.response.send_message.assert_awaited_once()
 
     async def test_help_view_buttons_edit_message(self):
-        view = HelpView(lang="en", owner_id=1)
+        view = HelpView(lang="vi", owner_id=1)
         interaction = DummyInteraction(user_id=1)
+        assert [button.label for button in view.children] == [
+            "Thống kê", "Cửa hàng", "Kho đồ", "Tiện ích"
+        ]
+        assert all(button.emoji is None for button in view.children)
+
         await view.stats_button.callback(interaction)
+        assert view.stats_button.style == __import__("discord").ButtonStyle.primary
         await view.shop_button.callback(interaction)
         await view.inventory_button.callback(interaction)
         await view.misc_button.callback(interaction)
+        assert view.misc_button.style == __import__("discord").ButtonStyle.primary
+        assert view.stats_button.style == __import__("discord").ButtonStyle.secondary
         assert interaction.response.edit_message.await_count == 4
 
     async def test_info_send_help_and_update_for_interaction(self, fake_bot, monkeypatch):
@@ -240,6 +255,10 @@ class TestShopCog:
 
         interaction = DummyInteraction(user_id=30)
         await cog._send_intro(interaction, mode="shop")
+        shop_embed = interaction.response.send_message.await_args_list[0].kwargs["embed"]
+        assert shop_embed.title == "Daily Shop"
+        assert shop_embed.color is None
+        assert shop_embed.footer.text == "Inu Bot • Session expires in 5 minutes"
         await cog._send_intro(interaction, mode="nightmarket")
         assert interaction.response.send_message.await_count == 2
 

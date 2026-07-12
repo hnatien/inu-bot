@@ -6,6 +6,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from utils import ValorantAPI
+from utils.i18n import DEFAULT_LANG, t
 from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +46,7 @@ class ValorantBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info(f'Logged in as {self.user.name if self.user else "Unknown User"}')
-        await self.change_presence(activity=discord.Game(name="/help | /language vi cho Tiếng Việt!"))
+        await self.change_presence(activity=discord.Game(name="/help | /language en for English!"))
 
     async def close(self) -> None:
         await self.v_api.close()
@@ -57,12 +58,11 @@ bot = ValorantBot()
 async def on_command_error(ctx: commands.Context, error: commands.CommandError) -> None:
     """Centralized error handler for prefix commands"""
     if isinstance(error, commands.CommandOnCooldown):
-        lang = "en"
+        lang = DEFAULT_LANG
         try:
             lang = await bot.v_api.get_language(ctx.author.id)
         except Exception:
             pass
-        from utils.i18n import t
         await ctx.send(t("error_cooldown", lang, retry_after=f"{error.retry_after:.2f}"))
     elif isinstance(error, commands.CommandNotFound):
         pass
@@ -72,18 +72,16 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError) 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     """Centralized error handler for slash commands"""
-    lang = "en"
+    lang = DEFAULT_LANG
     try:
         lang = await bot.v_api.get_language(interaction.user.id)
     except Exception:
         pass
 
     if isinstance(error, app_commands.CommandOnCooldown):
-        from utils.i18n import t
         await interaction.response.send_message(t("error_cooldown", lang, retry_after=f"{error.retry_after:.2f}"), ephemeral=True)
     else:
         logger.error(f"App Command Error: {error}")
-        from utils.i18n import t
         msg = t("error_generic", lang)
         if not interaction.response.is_done():
             await interaction.response.send_message(msg, ephemeral=True)

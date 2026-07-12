@@ -39,7 +39,6 @@ class InventoryCog(CogBase):
         embed = discord.Embed(
             title=t("title_inventory", lang),
             description=t("inv_intro", lang),
-            color=0xfa4454,
         )
 
         if isinstance(context, discord.Interaction):

@@ -43,7 +43,6 @@ class ShopCog(CogBase):
         embed = discord.Embed(
             title=t("safety_title", lang),
             description=t("safety_desc", lang),
-            color=0xfa4454
         )
         embed.set_footer(text=t("footer", lang))
         
@@ -74,13 +73,9 @@ class ShopCog(CogBase):
         embed = discord.Embed(
             title=t("title_valorant_store", lang) if mode == "shop" else t("title_night_market", lang),
             description=t("shop_intro", lang, mode=display_mode),
-            color=0xfa4454
         )
         
-        if isinstance(context, discord.Interaction):
-            embed.set_footer(text=t("footer", lang), icon_url=context.user.display_avatar.url)
-        else:
-            embed.set_footer(text=t("footer", lang), icon_url=context.author.display_avatar.url)
+        embed.set_footer(text=t("shop_session_footer", lang))
         
         if isinstance(context, discord.Interaction):
             await context.response.send_message(embed=embed, view=view)

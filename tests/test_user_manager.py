@@ -93,7 +93,7 @@ class TestLanguage:
     async def test_get_language_default(self, manager):
         manager.collection.find_one = AsyncMock(return_value=None)
         result = await manager.get_language(12345)
-        assert result == "en"
+        assert result == "vi"
 
     async def test_get_language_set(self, manager):
         manager.collection.find_one = AsyncMock(return_value={"lang": "vi"})
@@ -103,7 +103,7 @@ class TestLanguage:
     async def test_get_language_no_lang_field(self, manager):
         manager.collection.find_one = AsyncMock(return_value={"discord_id": "12345"})
         result = await manager.get_language(12345)
-        assert result == "en"
+        assert result == "vi"
 
     async def test_set_language(self, manager):
         result = await manager.set_language(12345, "vi")
@@ -115,7 +115,7 @@ class TestLanguage:
         mgr.collection = None
         mgr.use_mongodb = False
         result = await mgr.get_language(12345)
-        assert result == "en"
+        assert result == "vi"
 
     async def test_set_language_no_collection(self):
         """Test that set_language falls back to JSON when no collection."""

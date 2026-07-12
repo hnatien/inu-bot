@@ -4,7 +4,7 @@ from discord import app_commands
 from typing import Union, Optional
 
 from utils import ValorantAPI
-from utils.i18n import t
+from utils.i18n import DEFAULT_LANG, t
 from views.stat_views import StatView, process_and_send_stats
 from cogs import CogBase
 
@@ -91,14 +91,13 @@ class StatsCog(CogBase):
         else:
             await self._send_stat_intro(ctx, lang=lang)
 
-    async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context], lang: str = "en") -> None:
+    async def _send_stat_intro(self, context: Union[discord.Interaction, commands.Context], lang: str = DEFAULT_LANG) -> None:
         """Sends the initial interaction for stat lookup."""
         user_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
         view = StatView(self.api, user_id, lang=lang)
         embed = discord.Embed(
             title=t("title_valorant_tracker", lang),
             description=t("stat_intro", lang),
-            color=0xFD4553
         )
         embed.set_thumbnail(url="https://media.valorant-api.com/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04/24/largeicon.png")
         embed.set_footer(text=t("footer", lang))

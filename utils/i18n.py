@@ -1,6 +1,6 @@
 from typing import Any, Dict, Union
 
-DEFAULT_LANG = "en"
+DEFAULT_LANG = "vi"
 
 STRINGS: Dict[str, Dict[str, str]] = {
     "error_cooldown": {
@@ -42,16 +42,16 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
 
     "shop_modal_title": {
-        "vi": "Xác thực Cửa Hàng",
-        "en": "STORE Authentication",
+        "vi": "Mở Daily Shop",
+        "en": "Open Daily Shop",
     },
     "nm_modal_title": {
         "vi": "Xác thực Night Market",
         "en": "NIGHT MARKET Authentication",
     },
     "shop_modal_label": {
-        "vi": "Dán link Redirect vào đây",
-        "en": "Paste the Redirect link here",
+        "vi": "URL sau khi đăng nhập",
+        "en": "URL after signing in",
     },
     "shop_error_no_data": {
         "vi": "Không lấy được dữ liệu Daily Shop từ Riot.",
@@ -82,12 +82,12 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "**Discount: {percent}%**",
     },
     "btn_login": {
-        "vi": "🔑 Đăng nhập Riot",
-        "en": "🔑 Sign in to Riot",
+        "vi": "Đăng nhập Riot",
+        "en": "Sign in to Riot",
     },
     "btn_paste": {
-        "vi": "📋 Dán Link",
-        "en": "📋 Paste Link",
+        "vi": "Dán URL",
+        "en": "Paste URL",
     },
     "footer": {
         "vi": "Inu Bot",
@@ -95,21 +95,27 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
     "shop_intro": {
         "vi": (
-            "Để xem **{mode}**, hãy làm 3 bước:\n\n"
-            "1️⃣ Nhấn **Đăng nhập Riot** → đăng nhập tài khoản\n"
-            "2️⃣ Sau khi chuyển hướng, **copy toàn bộ URL** trên thanh địa chỉ\n"
-            "3️⃣ Nhấn **Dán Link** → paste URL vừa copy\n\n"
-            "⏱️ Nút sẽ hết hạn sau 5 phút, chạy lại lệnh nếu quá hạn.\n\n"
-            "*Dùng `/safety` để tìm hiểu về bảo mật.*"
+            "Đăng nhập Riot để xem {mode}.\n\n"
+            "**Cách thực hiện**\n"
+            "`1` Chọn **Đăng nhập Riot**\n"
+            "`2` Sao chép toàn bộ URL sau khi đăng nhập\n"
+            "`3` Quay lại và chọn **Dán URL**\n\n"
+            "🔒 Bot không lưu mật khẩu hoặc thông tin đăng nhập. "
+            "Dùng `/safety` để tìm hiểu thêm."
         ),
         "en": (
-            "To view your **{mode}**, follow 3 steps:\n\n"
-            "1️⃣ Click **Sign in to Riot** → sign in to your account\n"
-            "2️⃣ After redirect, **copy the entire URL** from the address bar\n"
-            "3️⃣ Click **Paste Link** → paste the URL you copied\n\n"
-            "⏱️ Buttons expire after 5 minutes, run the command again when needed.\n\n"
-            "*Use `/safety` to learn more about security.*"
+            "Sign in to Riot to view your current **{mode}**.\n\n"
+            "**How it works**\n"
+            "`1` Select **Sign in to Riot**\n"
+            "`2` Copy the entire URL after signing in\n"
+            "`3` Return here and select **Paste URL**\n\n"
+            "🔒 The bot never stores your password or sign-in details. "
+            "Use `/safety` to learn more."
         ),
+    },
+    "shop_session_footer": {
+        "vi": "Inu Bot • Phiên có hiệu lực trong 5 phút",
+        "en": "Inu Bot • Session expires in 5 minutes",
     },
     "safety_title": {
         "vi": "VỀ BẢO MẬT",
@@ -211,6 +217,30 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "vi": "Không có trận đấu gần đây.",
         "en": "No recent matches found.",
     },
+    "stat_match_history_desc": {
+        "vi": "{name}#{tag} · 5 trận gần nhất",
+        "en": "{name}#{tag} · 5 most recent matches",
+    },
+    "stat_win": {
+        "vi": "Thắng",
+        "en": "Win",
+    },
+    "stat_loss": {
+        "vi": "Thua",
+        "en": "Loss",
+    },
+    "stat_level": {
+        "vi": "Cấp độ",
+        "en": "Level",
+    },
+    "stat_region": {
+        "vi": "Khu vực",
+        "en": "Region",
+    },
+    "stat_peak_rank": {
+        "vi": "Rank cao nhất",
+        "en": "Peak rank",
+    },
     "stat_modal_title": {
         "vi": "TRA CỨU VALORANT",
         "en": "VALORANT STATS LOOKUP",
@@ -228,184 +258,100 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "An error occurred: `{error}`",
     },
 
-    "help_title": {
-        "vi": "Inu Bot",
-        "en": "Inu Bot",
-    },
+    "help_title": {"vi": "Trợ giúp", "en": "Help"},
     "help_desc": {
-        "vi": "Tra cứu stat, Daily Shop, Night Market và Inventory của bạn.",
-        "en": "Track stats, Daily Shop, Night Market and your Inventory.",
+        "vi": "Chọn một danh mục bên dưới để xem hướng dẫn và lệnh có sẵn.",
+        "en": "Choose a category below to view its guide and available commands.",
     },
-    "help_category_label": {
-        "vi": "DANH MỤC",
-        "en": "CATEGORIES",
-    },
-    "help_stat_label": {
-        "vi": "Stat",
-        "en": "Stat",
-    },
+    "help_category_label": {"vi": "Danh mục", "en": "Categories"},
+    "help_stat_label": {"vi": "Thống kê", "en": "Stats"},
     "help_stat_sub": {
-        "vi": "Rank, RR, lịch sử trận đấu",
-        "en": "Rank, RR, match history",
+        "vi": "`/stat` · Rank, RR và lịch sử trận đấu",
+        "en": "`/stat` · Rank, RR, and match history",
     },
-    "help_shop_label": {
-        "vi": "Shop",
-        "en": "Shop",
-    },
+    "help_shop_label": {"vi": "Cửa hàng", "en": "Shop"},
     "help_shop_sub": {
-        "vi": "Daily Shop · Night Market",
-        "en": "Daily Shop · Night Market",
+        "vi": "`/shop` · Daily Shop và Night Market",
+        "en": "`/shop` · Daily Shop and Night Market",
     },
-    "help_inv_label": {
-        "vi": "Inventory",
-        "en": "Inventory",
-    },
+    "help_inv_label": {"vi": "Kho đồ", "en": "Inventory"},
     "help_inv_sub": {
-        "vi": "Kho skin súng của bạn",
-        "en": "Your gun skin collection",
+        "vi": "`/inventory` · Xem và lọc skin đang sở hữu",
+        "en": "`/inventory` · Browse and filter owned skins",
     },
-    "help_misc_label": {
-        "vi": "Misc",
-        "en": "Misc",
-    },
+    "help_misc_label": {"vi": "Tiện ích", "en": "Utilities"},
     "help_misc_sub": {
-        "vi": "Prefix, hỗ trợ, cập nhật",
-        "en": "Prefix, support, updates",
+        "vi": "`/help` · Ngôn ngữ, cập nhật và các lệnh khác",
+        "en": "`/help` · Language, updates, and other commands",
     },
-    "help_stat_title": {
-        "vi": "HƯỚNG DẪN — STAT",
-        "en": "GUIDE — STAT",
-    },
+    "help_stat_title": {"vi": "Thống kê", "en": "Stats"},
     "help_stat_desc": {
         "vi": (
-            "Tra cứu stat Valorant theo nhiều cách.\n\n"
-            "```\n"
-            "/stat              Tra cứu nhanh (đã link)\n"
-            "/stat user:@abc    Xem stat người khác\n"
-            "/stat name:X tag:Y Tra cứu bằng Riot ID\n"
-            "```\n\n"
+            "`/stat` — Xem thống kê của tài khoản đã liên kết\n"
+            "`/stat user:@user` — Xem thống kê người khác\n"
+            "`/stat name:Tên tag:Tag` — Tra cứu bằng Riot ID\n\n"
             "**Liên kết tài khoản**\n"
-            "```\n"
-            "/link name tag     Liên kết Riot ID\n"
-            "/unlink            Hủy liên kết\n"
-            "```\n"
-            "Link xong thì gõ `/stat` là xem được luôn."
+            "`/link name:Tên tag:Tag` — Liên kết Riot ID\n"
+            "`/unlink` — Hủy liên kết"
         ),
         "en": (
-            "Look up Valorant stats in multiple ways.\n\n"
-            "```\n"
-            "/stat              Quick lookup (if linked)\n"
-            "/stat user:@abc    View another user's stats\n"
-            "/stat name:X tag:Y Manual lookup by Riot ID\n"
-            "```\n\n"
-            "**Account Linking**\n"
-            "```\n"
-            "/link name tag     Link Riot ID to Discord\n"
-            "/unlink            Unlink account\n"
-            "```\n"
-            "After linking, just type `/stat` to view your stats instantly."
+            "`/stat` — View stats for your linked account\n"
+            "`/stat user:@user` — View another user's stats\n"
+            "`/stat name:Name tag:Tag` — Look up a Riot ID\n\n"
+            "**Account linking**\n"
+            "`/link name:Name tag:Tag` — Link a Riot ID\n"
+            "`/unlink` — Unlink your account"
         ),
     },
-    "help_shop_title": {
-        "vi": "HƯỚNG DẪN — SHOP",
-        "en": "GUIDE — SHOP",
-    },
+    "help_shop_title": {"vi": "Cửa hàng", "en": "Shop"},
     "help_shop_desc": {
         "vi": (
-            "Xem Daily Shop và Night Market.\n\n"
-            "```\n"
-            "/shop              Xem cửa hàng\n"
-            "/nightmarket       Xem Night Market\n"
-            "/safety            Giải thích bảo mật\n"
-            "```\n\n"
-            "**Cách dùng**\n"
-            "1. Gõ `/shop` hoặc `/nightmarket`\n"
-            "2. Nhấn nút đăng nhập Riot\n"
-            "3. Đăng nhập trên trang chính thức\n"
-            "4. Copy toàn bộ URL redirect\n"
-            "5. Dán link vào modal\n\n"
-            "Token chỉ dùng 1 lần, không lưu trữ."
+            "`/shop` — Xem Daily Shop\n"
+            "`/nightmarket` — Xem Night Market\n"
+            "`/safety` — Tìm hiểu về bảo mật\n\n"
+            "**Cách sử dụng**\n"
+            "`1` Đăng nhập Riot bằng nút được cung cấp\n"
+            "`2` Sao chép toàn bộ URL sau khi đăng nhập\n"
+            "`3` Quay lại Discord và dán URL\n\n"
+            "Bot không lưu mật khẩu hoặc thông tin đăng nhập."
         ),
         "en": (
-            "View your Daily Shop and Night Market.\n\n"
-            "```\n"
-            "/shop              View Daily Shop\n"
-            "/nightmarket       View Night Market\n"
-            "/safety            Security explanation\n"
-            "```\n\n"
+            "`/shop` — View Daily Shop\n"
+            "`/nightmarket` — View Night Market\n"
+            "`/safety` — Learn about security\n\n"
             "**How to use**\n"
-            "1. Type `/shop` or `/nightmarket`\n"
-            "2. Click the Riot sign-in button\n"
-            "3. Sign in on the official website\n"
-            "4. Copy the entire redirect URL\n"
-            "5. Paste the link into the modal\n\n"
-            "Tokens are used once and never stored."
+            "`1` Sign in to Riot using the provided button\n"
+            "`2` Copy the entire URL after signing in\n"
+            "`3` Return to Discord and paste the URL\n\n"
+            "The bot never stores your password or sign-in details."
         ),
     },
-    "help_inv_title": {
-        "vi": "HƯỚNG DẪN — INVENTORY",
-        "en": "GUIDE — INVENTORY",
-    },
+    "help_inv_title": {"vi": "Kho đồ", "en": "Inventory"},
     "help_inv_desc": {
         "vi": (
-            "Xem kho đồ skin súng bạn đang sở hữu.\n\n"
-            "```\n"
-            "/inventory         Xem kho đồ skin\n"
-            "```\n\n"
-            "**Tính năng**\n"
-            "- Hiển thị danh sách skin súng của bạn\n"
-            "- Có menu lọc theo loại súng (Vandal, Phantom, v.v.)\n"
-            "- Hiển thị hình ảnh, tên và độ hiếm skin\n\n"
-            "**Cách dùng**\n"
-            "Tương tự như `/shop`, bạn cần đăng nhập Riot để bot lấy dữ liệu (Access Token chỉ dùng 1 lần)."
+            "`/inventory` — Xem các skin đang sở hữu\n\n"
+            "Bạn có thể lọc theo loại vũ khí và duyệt từng trang. "
+            "Quá trình đăng nhập giống Daily Shop; bot không lưu thông tin đăng nhập."
         ),
         "en": (
-            "View your collection of owned weapon skins.\n\n"
-            "```\n"
-            "/inventory         View skin inventory\n"
-            "```\n\n"
-            "**Features**\n"
-            "- List your owned weapon skins\n"
-            "- Filter by weapon type (Vandal, Phantom, etc.)\n"
-            "- Shows skin image, name, and rarity\n\n"
-            "**How to use**\n"
-            "Similar to `/shop`, you need to sign in to Riot (Access Token is one-time use)."
+            "`/inventory` — View your owned skins\n\n"
+            "Filter by weapon type and browse results by page. "
+            "Sign-in works like Daily Shop; the bot never stores your sign-in details."
         ),
     },
-    "help_misc_title": {
-        "vi": "HƯỚNG DẪN — KHÁC",
-        "en": "GUIDE — MISC",
-    },
+    "help_misc_title": {"vi": "Tiện ích", "en": "Utilities"},
     "help_misc_desc": {
         "vi": (
-            "Các lệnh tiện ích khác.\n\n"
-            "```\n"
-            "/help              Menu hướng dẫn\n"
-            "/update            Xem cập nhật mới nhất\n"
-            "/language          Đổi ngôn ngữ\n"
-            "```\n\n"
-            "**Prefix**\n"
-            "Tất cả lệnh đều dùng được với prefix `!`\n"
-            "Ví dụ: `!stat`, `!shop`, `!help`\n\n"
-            "**Hỗ trợ**\n"
-            "Gặp lỗi thì thử lại sau vài giây nhé.\n"
-            "Bot phụ thuộc API bên ngoài nên đôi khi "
-            "có thể bị chậm hoặc gián đoạn."
+            "`/help` — Mở menu trợ giúp\n"
+            "`/update` — Xem các thay đổi mới nhất\n"
+            "`/language` — Đổi ngôn ngữ\n\n"
+            "Bạn cũng có thể dùng prefix `!`, ví dụ `!stat` hoặc `!shop`."
         ),
         "en": (
-            "Other utility commands.\n\n"
-            "```\n"
-            "/help              Open this guide menu\n"
-            "/update            View latest updates\n"
-            "/language          Change language\n"
-            "```\n\n"
-            "**Prefix**\n"
-            "All commands also support the `!` prefix\n"
-            "Example: `!stat`, `!shop`, `!help`\n\n"
-            "**Support**\n"
-            "If you encounter an error, try again after a few seconds.\n"
-            "The bot relies on external APIs, so occasional "
-            "slowdowns or interruptions may occur."
+            "`/help` — Open the help menu\n"
+            "`/update` — View the latest changes\n"
+            "`/language` — Change language\n\n"
+            "You can also use the `!` prefix, for example `!stat` or `!shop`."
         ),
     },
     "update_title": {
@@ -484,8 +430,8 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "Titles",
     },
     "inv_loading": {
-        "vi": "Đang tải inventory...",
-        "en": "Loading inventory...",
+        "vi": "Đang tải kho đồ",
+        "en": "Loading inventory",
     },
     "inv_all_weapons": {
         "vi": "Tất cả vũ khí",
@@ -497,8 +443,8 @@ STRINGS: Dict[str, Dict[str, str]] = {
     },
 
     "title_daily_shop": {
-        "vi": "🛒 CỬA HÀNG HÀNG NGÀY",
-        "en": "🛒 DAILY SHOP",
+        "vi": "Daily Shop",
+        "en": "Daily Shop",
     },
     "title_night_market": {
         "vi": "🌙 CHỢ ĐÊM",
@@ -509,12 +455,12 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "📊 VALORANT TRACKER",
     },
     "title_valorant_store": {
-        "vi": "🛍️ CỬA HÀNG VALORANT",
-        "en": "🛍️ VALORANT STORE",
+        "vi": "Daily Shop",
+        "en": "Daily Shop",
     },
     "title_match_history": {
-        "vi": "LỊCH SỬ TRẬN ĐẤU — {name}#{tag}",
-        "en": "MATCH HISTORY — {name}#{tag}",
+        "vi": "Lịch sử trận đấu",
+        "en": "Match history",
     },
     "title_inventory": {
         "vi": "🎒 KHO ĐỒ VALORANT",
@@ -525,16 +471,16 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "No Data",
     },
     "stat_loading": {
-        "vi": "Đang tra cứu...",
-        "en": "Looking up stats...",
+        "vi": "Đang tra cứu người chơi",
+        "en": "Looking up player",
     },
     "shop_loading": {
-        "vi": "Đang tải...",
-        "en": "Loading...",
+        "vi": "Đang tải cửa hàng",
+        "en": "Loading shop",
     },
-    "shop_loading_hint": {
-        "vi": "Thường mất 2-5 giây.",
-        "en": "Usually takes 2-5 seconds.",
+    "loading_hint": {
+        "vi": "Vui lòng chờ trong giây lát.",
+        "en": "Please wait a moment.",
     },
     "timeout_expired": {
         "vi": "Phiên tương tác đã hết hạn. Hãy chạy lại lệnh để tiếp tục nhé.",
@@ -557,11 +503,11 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "en": "LOOK UP",
     },
     "mode_daily_shop": {
-        "vi": "Cửa Hàng",
+        "vi": "cửa hàng hôm nay của bạn",
         "en": "Daily Shop",
     },
     "mode_night_market": {
-        "vi": "Chợ Đêm",
+        "vi": "Night Market của bạn",
         "en": "Night Market",
     },
     "stat_modal_name_ph": {

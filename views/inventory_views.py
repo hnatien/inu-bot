@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from utils import ValorantAPI
 from utils.riot_auth import AuthResult
-from utils.constants import INVENTORY_ITEMS_PER_PAGE, EMBED_COLOR, ERROR_COLOR
+from utils.constants import INVENTORY_ITEMS_PER_PAGE
 from utils.i18n import t, DEFAULT_LANG
 from views.base_views import BaseView
 
@@ -17,11 +17,6 @@ logger = logging.getLogger('InventoryViews')
 CATEGORY_EMOJIS: Dict[str, str] = {
     "skins": "🔫",
 }
-
-CATEGORY_COLORS: Dict[str, int] = {
-    "skins": EMBED_COLOR,
-}
-
 
 class InventoryModal(discord.ui.Modal):
     def __init__(
@@ -58,7 +53,7 @@ class InventoryModal(discord.ui.Modal):
             self.url_input.value, lang=self.lang
         )
         if not success or not auth:
-            error_embed = discord.Embed(description=message, color=ERROR_COLOR)
+            error_embed = discord.Embed(description=message)
             await interaction.edit_original_response(embed=error_embed)
             return
 
@@ -66,16 +61,8 @@ class InventoryModal(discord.ui.Modal):
         self.context = None
 
         loading_embed = discord.Embed(
-            title=t("title_inventory", self.lang),
-            description=(
-                f"🔄 **{t('inv_loading', self.lang)}**\n"
-                f"{t('shop_loading_hint', self.lang)}"
-            ),
-            color=EMBED_COLOR,
-        )
-        loading_embed.set_footer(
-            text=t("footer", self.lang),
-            icon_url=interaction.user.display_avatar.url,
+            title=t("inv_loading", self.lang),
+            description=t("loading_hint", self.lang),
         )
         # Update the original response instead of sending a new one
         await interaction.edit_original_response(embed=loading_embed)
@@ -108,7 +95,6 @@ class InventoryModal(discord.ui.Modal):
             error_embed = discord.Embed(
                 title=t("title_inventory", self.lang),
                 description=t("inv_error_all_regions_failed", self.lang),
-                color=ERROR_COLOR,
             )
             await interaction.edit_original_response(embed=error_embed, view=None)
             return
@@ -117,7 +103,6 @@ class InventoryModal(discord.ui.Modal):
             error_embed = discord.Embed(
                 title=t("title_inventory", self.lang),
                 description=t("inv_error_no_data", self.lang),
-                color=ERROR_COLOR,
             )
             await interaction.edit_original_response(embed=error_embed, view=None)
             return
@@ -291,7 +276,6 @@ class InventoryPaginatorView(BaseView):
     def build_page(self) -> list:
         account = f"{self.auth.game_name}#{self.auth.tag_line}"
         category_label = t(f"inv_cat_{self.category}", self.lang)
-        color = CATEGORY_COLORS.get(self.category, 0xfa4454)
         emoji = CATEGORY_EMOJIS.get(self.category, "📦")
 
         header = discord.Embed(
@@ -303,7 +287,6 @@ class InventoryPaginatorView(BaseView):
                 category=category_label,
                 total=len(self.items),
             ),
-            color=color,
         )
         header.set_footer(
             text=f"{t('footer', self.lang)} • {t('inv_page', self.lang, current=self.current_page + 1, total=self.total_pages)}",
@@ -331,7 +314,6 @@ class InventoryPaginatorView(BaseView):
 
             list_embed = discord.Embed(
                 description="\n".join(desc_lines),
-                color=color,
             )
             embeds.append(list_embed)
 
@@ -345,7 +327,7 @@ class InventoryPaginatorView(BaseView):
         rarity_info = self.api.get_rarity_info(rarity_uuid)
         rarity_icon = self.api.get_rarity_icon(rarity_uuid)
 
-        embed = discord.Embed(color=rarity_info["color"])
+        embed = discord.Embed()
         if rarity_icon:
             embed.set_author(name=name, icon_url=rarity_icon)
         else:

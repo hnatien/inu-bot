@@ -4,11 +4,43 @@ These tests focus on testable logic (formatting, data processing)
 without requiring a running Discord bot. View classes that depend on
 discord.Interaction are tested via mocks where feasible.
 """
+import ast
+from pathlib import Path
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from views.shop_views import ShopModal
 from utils.constants import RARITY_DATA
+
+
+def test_only_rank_stat_embeds_define_a_color():
+    project_root = Path(__file__).parent.parent
+    colored_embeds = []
+
+    for folder in ("cogs", "views"):
+        for path in (project_root / folder).glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if not (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "Embed"
+                ):
+                    continue
+                color_keyword = next(
+                    (keyword for keyword in node.keywords if keyword.arg in {"color", "colour"}),
+                    None,
+                )
+                if color_keyword:
+                    colored_embeds.append((path.relative_to(project_root), color_keyword.value))
+
+    assert len(colored_embeds) == 2
+    for path, value in colored_embeds:
+        assert path == Path("views/stat_views.py")
+        assert isinstance(value, ast.Name)
+        assert value.id == "rank_color"
 
 
 class TestShopModalFormatDuration:

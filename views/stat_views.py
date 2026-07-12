@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands
 
 from utils import ValorantAPI
-from utils.constants import EMBED_COLOR, ERROR_COLOR
 from utils.i18n import t, DEFAULT_LANG
 from views.base_views import BaseView
 
@@ -69,11 +68,8 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
     ref_msg = None
 
     loading_embed = discord.Embed(
-        description=(
-            f"🔄 **{t('stat_loading', lang)}**\n"
-            f"{t('shop_loading_hint', lang)}"
-        ),
-        color=EMBED_COLOR,
+        title=t("stat_loading", lang),
+        description=t("loading_hint", lang),
     )
     if is_interaction:
         if not context.response.is_done():
@@ -114,7 +110,6 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
             error_msg = acc_data.get('message', 'Failed to connect to API.') if acc_data else 'API timeout.'
             error_embed = discord.Embed(
                 description=t('stat_error_account', lang, name=name, tag=tag, error=error_msg),
-                color=ERROR_COLOR
             )
             await update_response(embed=error_embed)
             return
@@ -140,7 +135,6 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         error_msg = mmr_data.get('message', 'Failed to retrieve rank data.')
         error_embed = discord.Embed(
             description=t('stat_error_rank', lang, name=name, tag=tag, error=error_msg),
-            color=ERROR_COLOR
         )
         await update_response(embed=error_embed)
         return
@@ -164,22 +158,32 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
         bars = min(max(rr_display // 10, 0), 10)
         progress_bar = f"`{'▰' * bars}{'▱' * (10 - bars)}` **{rr_display}/100 RR**"
 
-    desc_lines = f"**Rank:** {rank}\n{progress_bar}"
-    if peak_rank.lower() not in ("unknown", "unrated"):
-        desc_lines += f"\n\n**Peak Rank:** {peak_rank}"
-    
     profile_embed = discord.Embed(
-        title=f"📊 {name}#{tag}",
-        description=desc_lines,
+        title=rank,
+        description=progress_bar,
         color=rank_color
     )
     profile_embed.set_thumbnail(url=rank_icon)
-    profile_embed.set_author(name=f"Level: {level} | Region: {region.upper()}", icon_url=card_small)
+    profile_embed.set_author(name=f"{name}#{tag}", icon_url=card_small)
+    profile_embed.add_field(
+        name=t("stat_level", lang),
+        value=level,
+        inline=True,
+    )
+    profile_embed.add_field(
+        name=t("stat_region", lang),
+        value=region.upper(),
+        inline=True,
+    )
+    if peak_rank.lower() not in ("unknown", "unrated"):
+        profile_embed.add_field(
+            name=t("stat_peak_rank", lang),
+            value=peak_rank,
+            inline=True,
+        )
     
     if card_wide:
         profile_embed.set_image(url=card_wide)
-        
-    profile_embed.set_footer(text=t("footer", lang), icon_url=rank_icon)
     
     match_entries: List[Dict[str, Any]] = []
     if matches_data.get('status') == 200:
@@ -260,31 +264,28 @@ async def process_and_send_stats(context: Union[discord.Interaction, commands.Co
             })
 
     matches_embed = discord.Embed(
-        title=f"📊 {t('title_match_history', lang, name=name, tag=tag)}",
+        title=t("title_match_history", lang),
+        description=t("stat_match_history_desc", lang, name=name, tag=tag),
         color=rank_color
     )
     matches_embed.set_thumbnail(url=rank_icon)
     
     if match_entries:
         for entry in match_entries:
-            result_text = "[W]" if entry['is_win'] else "[L]"
-            field_title = f"{result_text} {entry['mode']} — {entry['map']}"
+            result_text = t("stat_win", lang) if entry['is_win'] else t("stat_loss", lang)
+            field_title = f"{result_text} · {entry['mode']} — {entry['map']}"
             field_value = (
-                f"```\n"
-                f"Agent : {entry['agent']}\n"
-                f"K/D/A : {entry['k']}/{entry['d']}/{entry['a']}\n"
-                f"ACS   : {entry['acs']}  |  HS% : {entry['hs_pct']}%\n"
-                f"```"
+                f"```\n{entry['agent']}\n"
+                f"K/D/A {entry['k']}/{entry['d']}/{entry['a']}  ·  "
+                f"ACS {entry['acs']}  ·  HS {entry['hs_pct']}%\n```"
             )
             matches_embed.add_field(name=field_title, value=field_value, inline=False)
     else:
         matches_embed.add_field(
             name=t("no_data", lang),
-            value=f"```\n{t('stat_no_matches', lang)}\n```", 
+            value=t("stat_no_matches", lang),
             inline=False
         )
-    
-    matches_embed.set_footer(text=t("footer", lang), icon_url=rank_icon)
 
     owner_id = context.user.id if isinstance(context, discord.Interaction) else context.author.id
 
