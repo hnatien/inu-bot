@@ -14,7 +14,7 @@ from views.shop_views import ShopModal
 from utils.constants import RARITY_DATA
 
 
-def test_only_rank_stat_embeds_define_a_color():
+def test_only_rank_stats_and_shop_products_define_a_color():
     project_root = Path(__file__).parent.parent
     colored_embeds = []
 
@@ -36,11 +36,24 @@ def test_only_rank_stat_embeds_define_a_color():
                 if color_keyword:
                     colored_embeds.append((path.relative_to(project_root), color_keyword.value))
 
-    assert len(colored_embeds) == 2
-    for path, value in colored_embeds:
-        assert path == Path("views/stat_views.py")
-        assert isinstance(value, ast.Name)
-        assert value.id == "rank_color"
+    assert len(colored_embeds) == 3
+
+    stat_embeds = [
+        value for path, value in colored_embeds
+        if path == Path("views/stat_views.py")
+    ]
+    assert len(stat_embeds) == 2
+    assert all(
+        isinstance(value, ast.Name) and value.id == "rank_color"
+        for value in stat_embeds
+    )
+
+    shop_embeds = [
+        value for path, value in colored_embeds
+        if path == Path("views/shop_views.py")
+    ]
+    assert len(shop_embeds) == 1
+    assert isinstance(shop_embeds[0], ast.Subscript)
 
 
 class TestShopModalFormatDuration:
@@ -92,6 +105,7 @@ class TestShopModalSkinEmbed:
         details = {"name": "Prime Vandal", "icon": "https://example.com/icon.png", "rarity": "r-uuid", "weapon": "Vandal"}
         embed = modal._create_skin_embed(details, 0, "offer-id")
         assert embed.author.name == "Prime Vandal"
+        assert embed.color.value == 0xd1548d
 
     def test_embed_with_discount(self, modal):
         modal.api.get_hardcoded_price.return_value = 1000

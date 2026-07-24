@@ -160,9 +160,10 @@ class ShopModal(discord.ui.Modal):
         base_price = self.api.get_hardcoded_price(rarity_uuid, is_melee, offer_id)
         final_price = base_price if discount == 0 else int(base_price * (100 - discount) / 100)
 
+        rarity_info = self.api.get_rarity_info(rarity_uuid)
         rarity_icon = self.api.get_rarity_icon(rarity_uuid)
 
-        embed = discord.Embed()
+        embed = discord.Embed(color=rarity_info["color"])
         if rarity_icon:
             embed.set_author(name=name, icon_url=rarity_icon)
         else:
